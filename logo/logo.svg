@@ -1,0 +1,28 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>Neorwc Logo</title>
+  <desc>A geometric abstract 'N' formed by two interlocking neon shapes representing Input and Output.</desc>
+  
+  <g id="Neorwc-Icon">
+    <!-- 
+      Shape 1: The Input & Process (Cyan) 
+      Represents: Read & Create. 
+      The left pillar and the diagonal bridge.
+    -->
+    <path 
+      id="Input-Flow"
+      d="M100 64C77.9086 64 60 81.9086 60 104V408C60 430.091 77.9086 448 100 448C122.091 448 140 430.091 140 408V206L278.2 433.6C285.6 445.8 298.8 452 312 452H320C342.1 452 360 434.1 360 412V364L136.4 68.6C128.8 58.4 116.2 55.4 106 60.2C104 61.2 102 62.4 100 64Z" 
+      fill="#00D8FF"
+    />
+
+    <!-- 
+      Shape 2: The Output (Pink) 
+      Represents: Write. 
+      The standalone right pillar receiving the connection.
+    -->
+    <path 
+      id="Output-Flow"
+      d="M412 64C389.909 64 372 81.9086 372 104V312L452 418V104C452 81.909 434.09 64 412 64Z" 
+      fill="#FF0055"
+    />
+  </g>
+</svg>
