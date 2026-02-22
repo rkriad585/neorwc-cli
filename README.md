@@ -1,5 +1,7 @@
 # Neorwc: Documentation Suite
 
+![Logo](https://github.com/rkriad585/neorwc-cli/blob/main/logo/logo.svg)
+
 ![Version](https://img.shields.io/badge/Version-v3.3.0-blue.svg)
 ![Language](https://img.shields.io/badge/Language-JavaScript-yellow.svg)
 ![License](https://img.shields.io/badge/License-Unspecified-lightgrey.svg)
