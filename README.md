@@ -24,12 +24,16 @@ To get started with Neorwc, you can install it globally via npm or link it for l
 
 ```bash
 # Install globally (if published to npm)
-npm install -g neorwc
+git clone https://github.com/rkriad585/neorwc-cli
+cd neorwc-cli
 
-# Or, for local development/linking:
+# for local development/linking:
 # After cloning the repository and navigating to its root:
 npm install
 npm link
+
+or
+./run
 ```
 
 ## Usage Example
