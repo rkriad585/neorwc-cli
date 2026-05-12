@@ -13,14 +13,17 @@
     "build:linux": "bun run scripts/build.ts --target=bun-linux-x64",
     "build:mac": "bun run scripts/build.ts --target=bun-darwin-arm64"
   },
-  "keywords": ["documentation", "ai", "cli"],
+  "keywords": ["documentation", "neorwc", "neorwc-cli", "ai", "cli"],
   "author": "RK Riad Khan",
   "license": "ISC",
   "dependencies": {
+    "boxen": "^8.0.1",
+    "chalk": "^5.6.2",
     "citty": "^0.2.2",
     "cli-spinners": "^3.4.0",
     "listr2": "^10.2.1",
-    "modelpedia": "^0.0.5"
+    "modelpedia": "^0.0.5",
+    "ora": "^9.4.0"
   },
   "devDependencies": {
     "@types/bun": "latest",

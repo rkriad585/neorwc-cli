@@ -1,0 +1,15 @@
+{
+  "category": "git",
+  "tips": [
+    "git status — check the current state of your working tree",
+    "Write commit messages in imperative mood: 'Add feature' not 'Added feature'",
+    "git diff --staged — review staged changes before committing",
+    "git log --oneline -5 — show the last 5 commits compactly",
+    "Use .gitkeep files to track empty directories",
+    "git commit --amend — update the last commit message or include forgotten changes",
+    "git stash — temporarily save uncommitted work",
+    "git branch -d <name> — delete a merged branch locally",
+    "Keep commits focused: one logical change per commit",
+    "git push --force-with-lease — safer force push than --force"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "category": "neorwc",
+  "tips": [
+    "Use --skill <name> to load a specific documentation persona skill",
+    "Run --dry-run (-d) to preview changes without writing files",
+    "Install community skills with --install <name> or --install all",
+    "List installed skills and model providers with --list (-l)",
+    "Switch models anytime with --model <name> (-m)",
+    "Override context window with --ctx <number> (-c)",
+    "Persistent project state is saved to docs/.neorwc",
+    "Init global config folder with --init (-n)",
+    "Browse remote templates with --templates (-t)",
+    "Gemini is the default provider — set NEORWC_GEMINI_KEY env var"
+  ]
+}

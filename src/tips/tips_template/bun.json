@@ -1,0 +1,15 @@
+{
+  "category": "bun",
+  "tips": [
+    "bun run neorwc.ts — run the CLI directly in source mode",
+    "bun build --compile — create a standalone executable binary",
+    "bun add <pkg> — install npm packages faster than npm",
+    "Bun ships with a built-in test runner: bun test",
+    "Bun.Glob is faster than glob npm package",
+    "Import .txt files directly with import syntax or Bun.file()",
+    "bunx <pkg> — run npm packages without installing",
+    "Bun's native fetch API works in both source and compiled mode",
+    "Use bun:sqlite for zero-config embedded databases",
+    "bun run dev — start the dev workflow from package.json scripts"
+  ]
+}

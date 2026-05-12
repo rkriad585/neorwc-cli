@@ -1,0 +1,15 @@
+{
+  "category": "typescript",
+  "tips": [
+    "Enable strict: true in tsconfig for full type safety",
+    "Prefer interfaces over type aliases for object shapes that may extend",
+    "Use readonly arrays: readonly T[] instead of T[] for immutability",
+    "Use satisfies operator to check types without widening",
+    "Prefer type inference over explicit annotations when obvious",
+    "Use discriminated unions instead of optional fields for state machines",
+    "Use const assertions (as const) for literal types",
+    "Branded types prevent accidental string/ID mixing",
+    "Use satisfies + as const for typed object literals",
+    "Use the satisfies keyword to validate types without widening"
+  ]
+}

@@ -1,5 +1,8 @@
 #!/usr/bin/env bun
 
+// tip banner — side-effect on import (shows before any CLI output)
+import "./src/tips/index.ts";
+
 import { defineCommand, runMain } from "citty";
 import { Listr } from "listr2";
 import cliSpinners, { randomSpinner } from "cli-spinners";
