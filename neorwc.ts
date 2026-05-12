@@ -11,7 +11,6 @@ import { stdin as input, stdout as output } from "node:process";
 import { config } from "./src/core/config.ts";
 import { scanProject } from "./src/core/scanner.ts";
 import { generateDocumentation, getModelCapabilities } from "./src/core/ai.ts";
-import { parseAndWrite } from "./src/core/writer.ts";
 import { loadState, saveState } from "./src/core/state.ts";
 import { listRemoteTemplates, installTemplate } from "./src/core/templates.ts";
 import type { ScanResult } from "./src/core/scanner.ts";
@@ -213,46 +212,32 @@ const main = defineCommand({
     );
     if (!proceed) return;
 
-    // 3. Generate + write
-    const phase2 = new Listr<{ aiResponse: string }>([
+    // 3. Agent loop: AI explores codebase with tools and writes documentation
+    const phase2 = new Listr<{ summary: string }>([
       {
-        title: "Thinking",
+        title: "Agent loop",
         task: async (ctx, task) => {
-          task.output = `Thinking (${selectedModel})...`;
-          ctx.aiResponse = await generateDocumentation({
+          task.output = `Running agent loop (${selectedModel})...`;
+          ctx.summary = await generateDocumentation({
             model: selectedModel,
             context: scanResult.context,
             instructions: combinedInstructions,
             projectName,
             ctxSize: contextLimit,
+            dryRun,
           });
-        },
-      },
-      {
-        title: "Writing files",
-        task: async (ctx, task) => {
-          if (dryRun) {
-            task.output = "Dry-run mode";
-            console.log(C.yellow("\n-- DRY RUN OUTPUT --"));
-            console.log(ctx.aiResponse.substring(0, 500));
-            return;
-          }
-          const files = await parseAndWrite(ctx.aiResponse, process.cwd());
-          if (files.length > 0) {
-            task.output = `Created ${files.length} files`;
-            console.log(C.green(`\n\u2714 Created ${files.length} files.`));
-            for (const f of files) console.log(C.gray(` - ${f}`));
-            console.log(C.gray(`  (Settings saved to docs/.neorwc)`));
-            console.log(C.green(`\n\u2714 Documentation updated.`));
-          } else {
-            console.log(C.red("\u26A0 No files parsed."));
-          }
+          task.output = "Agent loop completed";
         },
       },
     ], { rendererOptions: { showTimer: true } });
 
     try {
-      await phase2.run();
+      const { summary } = await phase2.run();
+      console.log(C.gray(`\n  ${summary}`));
+      if (!dryRun) {
+        console.log(C.green(`\n\u2714 Documentation updated.`));
+        console.log(C.gray(`  (Settings saved to docs/.neorwc)`));
+      }
     } catch (error) {
       console.log(C.red("\u2717 Error"));
       console.error(C.red((error as Error).message));

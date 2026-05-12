@@ -1,6 +1,5 @@
 import { join } from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
-import { existsSync } from "node:fs";
 import { config } from "./config.ts";
 
 // modelpedia import for enriching templates with model data

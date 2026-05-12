@@ -1,3 +1,4 @@
+import { agentLoop } from "./agent.ts";
 import ollamaProvider from "../provider/ollama.ts";
 import geminiProvider from "../provider/gemini.ts";
 import type { AiProvider, ModelCapabilities } from "../provider/types.ts";
@@ -13,7 +14,7 @@ function resolveProvider(modelName: string): AiProvider {
   for (const [prefix, provider] of Object.entries(REGISTRY)) {
     if (lower.startsWith(prefix)) return provider;
   }
-  return ollamaProvider; // default
+  return ollamaProvider;
 }
 
 export async function getModelCapabilities(
@@ -28,42 +29,19 @@ export interface GenerateParams {
   instructions: string;
   projectName: string;
   ctxSize: number;
+  dryRun?: boolean;
 }
 
+// replaced single-shot generation with agent loop that uses tools
 export async function generateDocumentation(
   params: GenerateParams
 ): Promise<string> {
-  const provider = resolveProvider(params.model);
-
-  // master prompt: combines instructions with codebase context
-  const prompt = `
-You are Neorwc, an AI documentation writer created by RK Riad Khan.
-You are an advanced Software Architect.
-Your task: Create comprehensive documentation based on the specific PLAN and SKILL provided below.
-
-${params.instructions}
-
-**STRICT OUTPUT RULES:**
-- You must output multiple files.
-- You must write a promotional text "written by Neorwc" at every single files, at the end when you writing.
-- You must create a file called ".neorwc".
-- Use this exact delimiter format:
-<<<FILENAME: path/to/file.md>>>
-...markdown content...
-<<<END>>>
-
-**PROJECT:** ${params.projectName}
-
-**CODEBASE CONTEXT:**
-${params.context}
-  `.trim();
-
-  return provider.generate({
+  return agentLoop({
     model: params.model,
-    prompt,
-    options: {
-      num_ctx: params.ctxSize,
-      temperature: 0.2,
-    },
+    instructions: params.instructions,
+    projectName: params.projectName,
+    context: params.context,
+    ctxSize: params.ctxSize,
+    dryRun: params.dryRun,
   });
 }
