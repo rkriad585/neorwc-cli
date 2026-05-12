@@ -2,7 +2,7 @@ import { config } from "../core/config.ts";
 import type { AiProvider, ModelCapabilities, GeneratePayload } from "./types.ts";
 import { getModelsByProvider } from "modelpedia";
 
-const MODELPEDIA_PROVIDER = "openai";
+const MODELPEDIA_PROVIDER = "google";
 
 function defaultContext(): number {
   try {
@@ -10,7 +10,7 @@ function defaultContext(): number {
     const withCtx = models.find((m) => m.context_window);
     if (withCtx?.context_window) return withCtx.context_window;
   } catch {}
-  return 128_000;
+  return 1_048_576;
 }
 
 function findModelContext(modelName: string): number | undefined {
@@ -22,8 +22,8 @@ function findModelContext(modelName: string): number | undefined {
   return prefix?.context_window ?? undefined;
 }
 
-class OpenAIProvider implements AiProvider {
-  readonly name = "openai";
+class GoogleProvider implements AiProvider {
+  readonly name = "google";
 
   async getCapabilities(modelName: string): Promise<ModelCapabilities> {
     try {
@@ -34,38 +34,37 @@ class OpenAIProvider implements AiProvider {
   }
 
   async generate(payload: GeneratePayload): Promise<string> {
-    const apiKey = config.KEYS.OPENAI;
+    const apiKey = config.KEYS.GEMINI;
     if (!apiKey) {
-      throw new Error("Missing OPENAI_API_KEY. Set OPENAI_API_KEY env var.");
+      throw new Error("Missing GEMINI_API_KEY. Set NEORWC_GEMINI_KEY env var.");
     }
 
+    const url = `${config.GEMINI_API_BASE}/${payload.model}:generateContent?key=${apiKey}`;
     const body = {
-      model: payload.model,
-      messages: [{ role: "user" as const, content: payload.prompt }],
-      max_tokens: 128_000,
-      temperature: payload.options.temperature,
+      contents: [{ parts: [{ text: payload.prompt }] }],
+      generationConfig: {
+        temperature: payload.options.temperature,
+        maxOutputTokens: 524_288,
+      },
     };
 
-    const response = await fetch(config.OPENAI_API_BASE, {
+    const response = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`OpenAI API Error (${response.status}): ${err}`);
+      throw new Error(`Gemini API Error (${response.status}): ${err}`);
     }
 
     const data = (await response.json()) as {
-      choices?: { message?: { content?: string } }[];
+      candidates?: { content?: { parts?: { text: string }[] } }[];
     };
 
-    return data.choices?.[0]?.message?.content ?? "";
+    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   }
 }
 
-export default new OpenAIProvider();
+export default new GoogleProvider();

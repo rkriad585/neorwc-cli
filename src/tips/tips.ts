@@ -112,7 +112,7 @@ export function showTip(category?: string): void {
     "",
   ].join("\n");
 
-  spin.succeed("Tips loaded");
+  spin.stop();
 
   console.log(
     boxen(content, {

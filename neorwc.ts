@@ -120,6 +120,7 @@ const main = defineCommand({
     install:  { type: "string", alias: "i", description: "Install a template (use \"all\" for everything)", valueHint: "name" },
     list:     { type: "boolean", alias: "l", description: "List installed local resources, List available Global Skills" },
     "dry-run": { type: "boolean", alias: "d", description: "Scan and plan without writing files" },
+    provider: { type: "string", alias: "p", description: "Provider (google, openai, ollama)", valueHint: "name" },
   },
   async run({ args }) {
     const dryRun = (args as Record<string, unknown>)["dry-run"] as boolean | undefined;
@@ -133,9 +134,10 @@ const main = defineCommand({
     // --- Main flow ---
     const savedState = await loadState();
     const selectedModel = (args.model as string) || savedState.model || config.DEFAULT_MODEL;
+    const selectedProvider = args.provider as string | undefined;
 
     logLogo();
-    console.log(C.gray(`  Using Model: ${C.cyan(selectedModel)}`));
+    console.log(C.gray(`  Using Model: ${C.cyan(selectedModel)}${selectedProvider ? C.gray(`  Provider: ${C.cyan(selectedProvider)}`) : ""}`));
 
     // 1. Fetch model capabilities + scan project
     const phase1 = new Listr<{
@@ -146,7 +148,7 @@ const main = defineCommand({
         title: "Connecting to model",
         task: async (ctx, task) => {
           task.output = `Connecting to ${selectedModel}...`;
-          ctx.modelCaps = await getModelCapabilities(selectedModel);
+          ctx.modelCaps = await getModelCapabilities(selectedModel, selectedProvider);
           if (!ctx.modelCaps.exists) {
             task.output = `Model '${selectedModel}' not found. Make sure to pull it.`;
           }
@@ -216,21 +218,27 @@ const main = defineCommand({
     );
     if (!proceed) return;
 
-    // 3. Agent loop: AI explores codebase with tools and writes documentation
+    // 3. Single-shot generation: call provider once, parse file blocks
+    const STATUSES = ["Thinking", "Coocking", "Besting", "Bubling", "Working", "Creating"];
     const phase2 = new Listr<{ summary: string }>([
       {
-        title: "Agent loop",
+        title: "Generating documentation",
         task: async (ctx, task) => {
-          task.output = `Running agent loop (${selectedModel})...`;
+          task.output = `${STATUSES[0]} with ${selectedModel}...`;
+          const timer = setInterval(() => {
+            task.output = `${STATUSES[Math.floor(Math.random() * STATUSES.length)]}...`;
+          }, 1200);
           ctx.summary = await generateDocumentation({
             model: selectedModel,
+            provider: selectedProvider,
             context: scanResult.context,
             instructions: combinedInstructions,
             projectName,
             ctxSize: contextLimit,
             dryRun,
           });
-          task.output = "Agent loop completed";
+          clearInterval(timer);
+          task.output = "Done";
         },
       },
     ], { rendererOptions: { showTimer: true } });
