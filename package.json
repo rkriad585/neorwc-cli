@@ -9,9 +9,9 @@
   },
   "scripts": {
     "dev": "bun run neorwc.ts",
-    "build": "bun build --compile --target=bun-windows-x64 ./neorwc.ts --outfile dist/neorwc",
-    "build:linux": "bun build --compile --target=bun-linux-x64 ./neorwc.ts --outfile dist/neorwc-linux",
-    "build:mac": "bun build --compile --target=bun-darwin-arm64 ./neorwc.ts --outfile dist/neorwc-mac"
+    "build": "bun run scripts/build.ts --target=bun-windows-x64",
+    "build:linux": "bun run scripts/build.ts --target=bun-linux-x64",
+    "build:mac": "bun run scripts/build.ts --target=bun-darwin-arm64"
   },
   "keywords": ["documentation", "ai", "cli"],
   "author": "RK Riad Khan",
