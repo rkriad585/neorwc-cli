@@ -2,7 +2,7 @@
 
 import { defineCommand, runMain } from "citty";
 import { Listr } from "listr2";
-import cliSpinners from "cli-spinners";
+import cliSpinners, { randomSpinner } from "cli-spinners";
 import { basename, join } from "node:path";
 import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
@@ -41,9 +41,8 @@ function hexToRgb(hex: string): string {
 }
 
 // ─── Standalone spinner using cli-spinners (replaces ora) ────────────────────
-function createSpinner(text: string) {
-  const frames = cliSpinners.dots.frames;
-  const interval = cliSpinners.dots.interval;
+function createSpinner(text: string, useRandom = false) {
+  const { frames, interval } = useRandom ? randomSpinner() : cliSpinners.dots;
   let i = 0;
   let timer: Timer | null = null;
   return {
@@ -270,7 +269,7 @@ async function handleInit(): Promise<void> {
     return;
   }
 
-  const spin = createSpinner("Initializing Neorwc with Neorwc-Style Profiles...").start();
+  const spin = createSpinner("Initializing Neorwc with Neorwc-Style Profiles...", true).start();
   await mkdir(SKILLS, { recursive: true });
 
   await writeFile(
@@ -316,6 +315,30 @@ async function handleList(): Promise<void> {
   };
 
   await printFiles(SKILLS, "Skills");
+
+  // Show modelpedia provider details: API URLs + model context windows
+  const { getProvider, getModelsByProvider } = await import("modelpedia");
+  console.log(C.bold("  Model Providers (via modelpedia):\n"));
+
+  for (const name of ["openai", "anthropic", "google"]) {
+    const provider = getProvider(name);
+    const models = getModelsByProvider(name);
+    if (!provider || models.length === 0) continue;
+
+    console.log(`    ${C.bold(provider.name)}`);
+    console.log(`      API: ${C.cyan(provider.api_url)}`);
+    console.log(`      Models (${models.length} total):`);
+
+    // show first 3 models with context window details
+    for (const m of models.slice(0, 3)) {
+      const ctx = m.context_window ? `${m.context_window.toLocaleString()} tokens` : "context N/A";
+      console.log(`        - ${m.id} (${ctx})`);
+    }
+    if (models.length > 3) {
+      console.log(`        ... and ${models.length - 3} more`);
+    }
+    console.log("");
+  }
 }
 
 runMain(main);
