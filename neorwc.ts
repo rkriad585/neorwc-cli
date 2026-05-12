@@ -19,17 +19,14 @@ import { listRemoteTemplates, installTemplate } from "./src/core/templates.ts";
 import type { ScanResult } from "./src/core/scanner.ts";
 
 // Version: try build-time injection first, then runtime .version file
-import { VERSION as BUILD_VER, VERSION_TAG as BUILD_TAG } from "./src/core/__version.ts";
+import { VERSION as BUILD_VER } from "./src/core/__version.ts";
 
 let VERSION = BUILD_VER;
-let VERSION_TAG = BUILD_TAG;
 
 // In source mode (no build injection), read from .version file
 if (VERSION === "0.0.0") {
   try {
-    const raw = readFileSync(new URL(".version", import.meta.url), "utf-8").trim();
-    VERSION = raw.replace(/^v/, "");
-    VERSION_TAG = raw;
+    VERSION = readFileSync(new URL(".version", import.meta.url), "utf-8").trim().replace(/^v/, "");
   } catch {
     // keep fallback
   }
@@ -104,12 +101,7 @@ function drawUsageBar(tokens: number, limit: number): void {
 
 // ─── Logo ────────────────────────────────────────────────────────────────────
 function logLogo(): void {
-  console.log(C.hex(config.COLORS.primary, `
-  _   _  ____  ___  ____  __      __  ___
- | \\ | || ===|/ _ \\| ===| \\ \\ /\\ / / / _|
- |_|\\_||____|\\___/|_|\\_\\  \\_/\\_/   \\__|
- `));
-  console.log(C.hex(config.COLORS.secondary, `  Neo Read Write Create // ${VERSION_TAG}\n`));
+  console.log(C.hex(config.COLORS.secondary, "Neo Read Write Create\n"));
 }
 
 // ─── CLI command definition ──────────────────────────────────────────────────
