@@ -3,8 +3,8 @@
 import { defineCommand, runMain } from "citty";
 import { Listr } from "listr2";
 import cliSpinners from "cli-spinners";
-import { join } from "node:path";
-import { existsSync } from "node:fs";
+import { basename, join } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output } from "node:process";
@@ -16,6 +16,14 @@ import { loadState, saveState } from "./src/core/state.ts";
 import { listRemoteTemplates, installTemplate } from "./src/core/templates.ts";
 import type { ScanResult } from "./src/core/scanner.ts";
 
+// Read version from .version file (graceful fallback for compiled binary)
+let VERSION = "1.0.0";
+try {
+  VERSION = readFileSync(new URL(".version", import.meta.url), "utf-8").trim().replace(/^v/, "");
+} catch {
+  // compiled binary: import.meta.url resolves to internal bundle path
+}
+
 // ─── ANSI color helpers (replaces chalk) ────────────────────────────────────
 const C = {
   cyan:    (s: string) => `\x1b[36m${s}\x1b[0m`,
@@ -25,7 +33,6 @@ const C = {
   gray:    (s: string) => `\x1b[90m${s}\x1b[0m`,
   bold:    (s: string) => `\x1b[1m${s}\x1b[0m`,
   hex:     (_hex: string, s: string) => `\x1b[38;2;${hexToRgb(_hex)}m${s}\x1b[0m`,
-  bgWarn:  (s: string) => `\x1b[43m\x1b[30m${s}\x1b[0m`,
 };
 
 function hexToRgb(hex: string): string {
@@ -39,14 +46,14 @@ function createSpinner(text: string) {
   const interval = cliSpinners.dots.interval;
   let i = 0;
   let timer: Timer | null = null;
-  const api = {
+  return {
     start() {
       output.write(` ${frames[0]} ${text}`);
       timer = setInterval(() => {
         i = (i + 1) % frames.length;
         output.write(`\r ${frames[i]} ${text}`);
       }, interval);
-      return api;
+      return this;
     },
     succeed(msg: string) {
       if (timer) clearInterval(timer);
@@ -61,21 +68,19 @@ function createSpinner(text: string) {
       output.write(`\r${C.yellow("\u26A0")} ${msg}\n`);
     },
   };
-  return api;
 }
 
 // ─── Confirm prompt (replaces inquirer) ──────────────────────────────────────
 async function promptConfirm(message: string, defaultVal = true): Promise<boolean> {
   const rl = readline.createInterface({ input, output });
-  const hint = defaultVal ? "Y/n" : "y/N";
-  const answer = await rl.question(`${message} [${hint}]: `);
+  const answer = await rl.question(`${message} [${defaultVal ? "Y/n" : "y/N"}]: `);
   rl.close();
-  const trimmed = answer.trim().toLowerCase();
-  if (trimmed === "") return defaultVal;
-  return trimmed === "y" || trimmed === "yes";
+  const t = answer.trim().toLowerCase();
+  if (t === "") return defaultVal;
+  return t === "y" || t === "yes";
 }
 
-// ─── Context usage bar (green → yellow → red based on fill %) ────────────────
+// ─── Context usage bar ───────────────────────────────────────────────────────
 function drawUsageBar(tokens: number, limit: number): void {
   const percent = Math.min((tokens / limit) * 100, 100);
   const barLen = 30;
@@ -87,57 +92,50 @@ function drawUsageBar(tokens: number, limit: number): void {
   console.log(`  Context Usage: [${color(bar)}] ${tokens}/${limit} tokens`);
 }
 
-// ─── Logo (original uses config.COLORS primary/secondary hex) ────────────────
-function printLogo(): void {
-  const primary = config.COLORS.primary;   // "#00D8FF"
-  const secondary = config.COLORS.secondary; // "#FF0055"
-  console.log(C.hex(primary, `
+// ─── Logo ────────────────────────────────────────────────────────────────────
+function logLogo(): void {
+  console.log(C.hex(config.COLORS.primary, `
   _   _  ____  ___  ____  __      __  ___
  | \\ | || ===|/ _ \\| ===| \\ \\ /\\ / / / _|
  |_|\\_||____|\\___/|_|\\_\\  \\_/\\_/   \\__|
-  `));
-  console.log(C.hex(secondary, "  Neo Read Write Create // v3.0.0\n"));
+ `));
+  console.log(C.hex(config.COLORS.secondary, "  Neo Read Write Create // v3.0.0\n"));
 }
 
 // ─── CLI command definition ──────────────────────────────────────────────────
 const main = defineCommand({
   meta: {
     name: "neorwc",
-    version: "3.3.0",
+    version: VERSION,
     description: "Neorwc: Documentation Suite",
   },
   args: {
     model:    { type: "string", alias: "m", description: "Ollama model", valueHint: "type" },
     ctx:      { type: "string", alias: "c", description: "Override Context Window (default: auto-detect)", valueHint: "number" },
-    plan:     { type: "string", alias: "p", description: "Use a global plan (e.g., api-docs)", valueHint: "name" },
     skill:    { type: "string", alias: "s", description: "Use a specific persona skill (e.g., technical-writer)", valueHint: "name" },
-    init:     { type: "boolean", alias: "n", description: "Initialize ~/.neorwc folder with default templates" },
+    init:     { type: "boolean", alias: "n", description: "Initialize ~/.config/neostore/neorwc folder with default templates" },
     templates: { type: "boolean", alias: "t", description: "List available templates from GitHub" },
     install:  { type: "string", alias: "i", description: "Install a template (use \"all\" for everything)", valueHint: "name" },
-    list:     { type: "boolean", alias: "l", description: "List installed local resources, List available Global Plans and Skills" },
+    list:     { type: "boolean", alias: "l", description: "List installed local resources, List available Global Skills" },
     "dry-run": { type: "boolean", alias: "d", description: "Scan and plan without writing files" },
   },
   async run({ args }) {
-    // citty stores kebab-case keys as-is, access via bracket notation
     const dryRun = (args as Record<string, unknown>)["dry-run"] as boolean | undefined;
 
-    // --- STANDALONE FLAGS (match original ordering + process.exit behaviour) ---
+    // --- Standalone flags ---
     if (args.templates)  { await listRemoteTemplates(); return; }
     if (args.install)    { await installTemplate(args.install as string); return; }
     if (args.init)       { return await handleInit(); }
     if (args.list)       { return await handleList(); }
 
-    // --- MAIN DOCUMENTATION FLOW ---
-
-    // load persisted state, merge with CLI flags
+    // --- Main flow ---
     const savedState = await loadState();
     const selectedModel = (args.model as string) || savedState.model || config.DEFAULT_MODEL;
 
-    printLogo();
+    logLogo();
     console.log(C.gray(`  Using Model: ${C.cyan(selectedModel)}`));
 
-    // Phase 1 — connect to model + scan project
-    // (original uses 2 separate ora spinners; we use listr2 for cleaner flow)
+    // 1. Fetch model capabilities + scan project
     const phase1 = new Listr<{
       modelCaps: { maxContext: number; exists: boolean };
       scanResult: ScanResult;
@@ -164,17 +162,15 @@ const main = defineCommand({
 
     const { modelCaps, scanResult } = await phase1.run();
 
-    // resolve context: CLI flag > saved state > model auto-detect > hard default
+    // Resolve context: flag > saved state > model auto-detect > hard default
     let contextLimit = 65536;
     if (args.ctx)            contextLimit = parseInt(args.ctx as string);
     else if (savedState.ctx) contextLimit = savedState.ctx;
     else                     contextLimit = modelCaps.maxContext;
 
-    // match original: show "Model loaded. Max Context: ..." AFTER context is resolved
     console.log(`  ${C.green("\u2713")} Model loaded. Max Context: ${C.bold(String(contextLimit))} tokens.\n`);
 
     await saveState({ model: selectedModel, ctx: contextLimit, lastRun: new Date().toISOString() });
-    console.log(C.gray(`  (Settings saved to docs/.neorwc)`));
 
     drawUsageBar(scanResult.tokenEstimate, contextLimit);
 
@@ -182,7 +178,7 @@ const main = defineCommand({
       console.log(C.red(`  \u26A0 Warning: Input exceeds model limit (${contextLimit}). Truncation will occur.`));
     }
 
-    // --- LOAD INSTRUCTIONS: skill (persona), plan (strategy), local context ---
+    // 2. Resolve instructions: skill + local context
     let combinedInstructions = "";
     const { SKILLS } = config.GLOBAL_PATHS;
 
@@ -196,25 +192,13 @@ const main = defineCommand({
       }
     }
 
-    if (args.plan) {
-      const plansDir = join(config.GLOBAL_PATHS.ROOT, "plans");
-      const planPath = join(plansDir, `${args.plan}.md`);
-      if (existsSync(planPath)) {
-        combinedInstructions += `\n\n--- EXECUTE THIS PLAN ---\n${await readFile(planPath, "utf-8")}`;
-        console.log(C.hex(config.COLORS.info, `  + Loaded Plan: ${args.plan}`));
-      } else {
-        console.log(C.red(`  x Plan '${args.plan}' not found in ~/.neorwc/plans`));
-      }
-    }
-
-    // project-specific instructions from neorwc.md in cwd
     if (existsSync(config.CONTEXT_FILE)) {
       combinedInstructions += `\n\n--- PROJECT SPECIFIC INSTRUCTIONS ---\n${await readFile(config.CONTEXT_FILE, "utf-8")}`;
       console.log(C.green(`  + Loaded Local: ${config.CONTEXT_FILE}`));
     }
 
-    // fallback: prompt for name + description when no plan/skill given
-    let projectName = process.cwd().split(/[\\/]/).pop() || "project";
+    // Fallback prompt for name + description
+    let projectName = basename(process.cwd());
     if (!combinedInstructions) {
       const rl = readline.createInterface({ input, output });
       projectName = (await rl.question(`Project Name [${projectName}]: `)) || projectName;
@@ -223,14 +207,14 @@ const main = defineCommand({
       combinedInstructions = desc || "Generate standard documentation.";
     }
 
-    // confirm before hitting the AI
+    // Confirm
     const proceed = await promptConfirm(
       dryRun ? "Run dry-run analysis?" : "Generate documentation now?",
       true,
     );
     if (!proceed) return;
 
-    // Phase 2 — AI generation + file writing
+    // 3. Generate + write
     const phase2 = new Listr<{ aiResponse: string }>([
       {
         title: "Thinking",
@@ -249,7 +233,7 @@ const main = defineCommand({
         title: "Writing files",
         task: async (ctx, task) => {
           if (dryRun) {
-            task.output = "Dry-run mode — no files written";
+            task.output = "Dry-run mode";
             console.log(C.yellow("\n-- DRY RUN OUTPUT --"));
             console.log(ctx.aiResponse.substring(0, 500));
             return;
@@ -271,29 +255,24 @@ const main = defineCommand({
     try {
       await phase2.run();
     } catch (error) {
-      console.log(C.red(`\u2717 Error`));
+      console.log(C.red("\u2717 Error"));
       console.error(C.red((error as Error).message));
     }
   },
 });
 
-// ─── STANDALONE HANDLERS ─────────────────────────────────────────────────────
+// ─── Standalone handlers ─────────────────────────────────────────────────────
 
 async function handleInit(): Promise<void> {
   const { ROOT, SKILLS } = config.GLOBAL_PATHS;
-  // original uses "PLANS" from GLOBAL_PATHS, but GLOBAL_PATHS doesn't define PLANS → bug
-  // we define plans under ROOT/plans
   if (existsSync(ROOT)) {
-    console.log(C.yellow(`\u26A0  Configuration folder already exists at ${ROOT}`));
+    console.log(C.yellow("\u26A0  Configuration folder already exists at " + ROOT));
     return;
   }
 
   const spin = createSpinner("Initializing Neorwc with Neorwc-Style Profiles...").start();
-
   await mkdir(SKILLS, { recursive: true });
-  await mkdir(join(ROOT, "plans"), { recursive: true });
 
-  // write default skill (persona) — same content as original
   await writeFile(
     join(SKILLS, "neorwc-architect.md"),
     `# Skill: Neorwc Senior Architect
@@ -305,7 +284,7 @@ async function handleInit(): Promise<void> {
 - Use MermaidJS diagrams where complex logic exists.
 - Write for a Senior Developer audience.
 **Format:**
-- Use clear headings (e.g. H1, H2, H3, H4 more).
+- Use clear headings (e.g.. H1, H2, H3, H4 more).
 - Use tables for property definitions.
 - Use emoji to make it more beautiful, friendly and better reading experience.
 - Explain how to use this project with examples
@@ -318,70 +297,25 @@ async function handleInit(): Promise<void> {
     "utf-8",
   );
 
-  // write default plan (comprehensive suite)
-  await writeFile(
-    join(ROOT, "plans", "full-suite.md"),
-    `# Plan: Comprehensive Architecture Breakdown
-**Goal:** Create a full documentation suite suitable for enterprise handover.
-
-**Required Files:**
-1. \`docs/README.md\`: High-level overview, badges, quick start.
-2. \`docs/architecture/system-design.md\`: 
-   - Explain the folder structure.
-   - Diagram the data flow.
-3. \`docs/api/reference.md\` (if API exists): 
-   - Endpoints, Methods, Payloads.
-4. \`docs/guides/contribution.md\`:
-   - Setup instructions.
-   - Linting/Testing rules.
-5. e.g. mores (if need).
-
-**Style:** Markdown with rigorous detail.`,
-    "utf-8",
-  );
-
   spin.succeed(`Initialized at ${C.bold(ROOT)}`);
   console.log(C.green(`  \u2714 Created Skill: neorwc-architect`));
-  console.log(C.green(`  \u2714 Created Plan: full-suite`));
 }
 
 async function handleList(): Promise<void> {
-  const { ROOT, SKILLS } = config.GLOBAL_PATHS;
-  console.log(C.cyan("\n\uD83D\uDCC2 Available Global Resources:\n"));
+  const { SKILLS } = config.GLOBAL_PATHS;
+  console.log(C.hex(config.COLORS.info, "\n\uD83D\uDCC2 Available Global Resources:\n"));
 
-  // list installed skills
-  if (existsSync(SKILLS)) {
-    const files = await readdir(SKILLS);
-    console.log(C.bold("  Skills:"));
+  const printFiles = async (dir: string, type: string) => {
+    if (!existsSync(dir)) return console.log(C.gray(`  No ${type} folder found. Run --init`));
+    const files = await readdir(dir);
+    console.log(C.bold(`  ${type}:`));
     for (const f of files.filter((f) => f.endsWith(".md"))) {
       console.log(`    - ${f.replace(".md", "")}`);
     }
-  } else {
-    console.log(C.gray("  No skills folder found. Run --init"));
-  }
+    console.log("");
+  };
 
-  // list installed plans
-  const plansDir = join(ROOT, "plans");
-  if (existsSync(plansDir)) {
-    const files = await readdir(plansDir);
-    console.log(C.bold("\n  Plans:"));
-    for (const f of files.filter((f) => f.endsWith(".md"))) {
-      console.log(`    - ${f.replace(".md", "")}`);
-    }
-  } else {
-    console.log(C.gray("\n  No plans folder found. Run --init"));
-  }
-
-  // show modelpedia provider info
-  const { getModelsByProvider } = await import("modelpedia");
-  console.log(C.bold("\n  Model Providers (via modelpedia):"));
-  for (const provider of ["openai", "anthropic", "google"]) {
-    const models = getModelsByProvider(provider);
-    if (models.length > 0) {
-      console.log(`    ${provider}: ${models.length} models available`);
-    }
-  }
-  console.log("");
+  await printFiles(SKILLS, "Skills");
 }
 
 runMain(main);
