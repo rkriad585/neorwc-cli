@@ -4,26 +4,7 @@ import { homedir } from "node:os";
 const HOME_DIR = homedir();
 const GLOBAL_ROOT = join(HOME_DIR, ".config/neostore/neorwc");
 
-const MODEL_ID = 3;
-const OLLAMA_TAGS_URL = "http://localhost:11434/api/tags";
-
-async function getOllamaDefaultModel(): Promise<string> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 2000);
-    const response = await fetch(OLLAMA_TAGS_URL, { signal: controller.signal });
-    clearTimeout(timeout);
-    if (response.ok) {
-      const data = (await response.json()) as { models?: { name: string }[] };
-      return data.models?.[MODEL_ID]?.name ?? "llama3";
-    }
-  } catch {
-    // Ollama down
-  }
-  return "llama3";
-}
-
-const DEFAULT_MODEL = await getOllamaDefaultModel();
+const DEFAULT_MODEL = "gemini-2.5-flash";
 
 export const IGNORE_PATTERNS = [
   "**/node_modules/**", "**/.git/**", "**/dist/**", "**/build/**", "**/.config/**",
