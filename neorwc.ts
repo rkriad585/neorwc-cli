@@ -15,10 +15,13 @@ import { loadState, saveState } from "./src/core/state.ts";
 import { listRemoteTemplates, installTemplate } from "./src/core/templates.ts";
 import type { ScanResult } from "./src/core/scanner.ts";
 
-// Read version from .version file (graceful fallback for compiled binary)
-let VERSION = "1.0.0";
+// Read version from .version file (0.0.0 fallback for compiled binary)
+let VERSION = "0.0.0";
+let VERSION_TAG = "v0.0.0";
 try {
-  VERSION = readFileSync(new URL(".version", import.meta.url), "utf-8").trim().replace(/^v/, "");
+  const raw = readFileSync(new URL(".version", import.meta.url), "utf-8").trim();
+  VERSION = raw.replace(/^v/, "");
+  VERSION_TAG = raw;
 } catch {
   // compiled binary: import.meta.url resolves to internal bundle path
 }
@@ -97,7 +100,7 @@ function logLogo(): void {
  | \\ | || ===|/ _ \\| ===| \\ \\ /\\ / / / _|
  |_|\\_||____|\\___/|_|\\_\\  \\_/\\_/   \\__|
  `));
-  console.log(C.hex(config.COLORS.secondary, "  Neo Read Write Create // v3.0.0\n"));
+  console.log(C.hex(config.COLORS.secondary, `  Neo Read Write Create // ${VERSION_TAG}\n`));
 }
 
 // ─── CLI command definition ──────────────────────────────────────────────────
