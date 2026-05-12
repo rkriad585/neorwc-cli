@@ -20,18 +20,49 @@ function resolveProvider(modelName: string): AiProvider {
   return ollamaProvider;
 }
 
+// extract balanced JSON starting at an opening brace, respecting string boundaries
+// this correctly handles nested braces inside JSON strings (e.g. code in file content)
+function extractBalancedJSON(text: string, start: number): string | null {
+  if (text[start] !== "{") return null;
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+
+    if (escaped) { escaped = false; continue; }
+    if (ch === "\\" && inString) { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+
+    if (!inString) {
+      if (ch === "{") depth++;
+      else if (ch === "}") {
+        depth--;
+        if (depth === 0) return text.slice(start, i + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
 // parse a tool call from the AI response text
 // format: TOOL_CALL: <name>\nARGS: <JSON>
 // returns null if no tool call is found
 function parseToolCall(text: string): ToolCall | null {
-  const match = text.match(/^TOOL_CALL:\s*(\S+)\s*\nARGS:\s*(\{[\s\S]*?\})/m);
-  if (!match) return null;
+  const match = text.match(/^TOOL_CALL:\s*(\S+)\s*\nARGS:\s*/m);
+  if (!match || match.index === undefined) return null;
+
+  const name = match[1];
+  const jsonStart = match.index + match[0].length;
+  const jsonStr = extractBalancedJSON(text, jsonStart);
+
+  if (!jsonStr) return null;
 
   try {
-    return {
-      name: match[1],
-      args: JSON.parse(match[2]) as Record<string, unknown>,
-    };
+    return { name, args: JSON.parse(jsonStr) as Record<string, unknown> };
   } catch {
     return null;
   }
@@ -152,14 +183,21 @@ export async function agentLoop(params: {
   let conversation = systemPrompt;
 
   for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-    const response = await provider.generate({
-      model: params.model,
-      prompt: conversation,
-      options: {
-        num_ctx: params.ctxSize,
-        temperature: 0.2,
-      },
-    });
+    // call the AI — catch errors and let the loop recover
+    let response: string;
+    try {
+      response = await provider.generate({
+        model: params.model,
+        prompt: conversation,
+        options: {
+          num_ctx: params.ctxSize,
+          temperature: 0.2,
+        },
+      });
+    } catch (err) {
+      conversation += `\n\nTOOL_RESULT: system\nERROR: AI call failed: ${(err as Error).message}`;
+      continue;
+    }
 
     const toolCall = parseToolCall(response);
 
@@ -175,7 +213,13 @@ export async function agentLoop(params: {
         filesWrittenViaTool = true;
       }
 
-      const result = await tool.execute(toolCall.args, dryRun);
+      // execute the tool — catch errors so the AI can recover
+      let result: string;
+      try {
+        result = await tool.execute(toolCall.args, dryRun);
+      } catch (err) {
+        result = `ERROR: Tool execution failed: ${(err as Error).message}`;
+      }
       conversation += `\n\n${response}\n\nTOOL_RESULT: ${toolCall.name}\n${result}`;
       continue;
     }
