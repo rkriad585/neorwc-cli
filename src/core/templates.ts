@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { config } from "./config.ts";
 
