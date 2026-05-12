@@ -1,25 +1,29 @@
 {
   "name": "neorwc",
   "version": "1.0.0",
-  "description": "",
+  "description": "Neorwc: AI-powered documentation suite (Bun + TypeScript)",
+  "type": "module",
+  "module": "neorwc.ts",
   "bin": {
-    "neorwc": "./neorwc.js"
+    "neorwc": "./neorwc.ts"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "bun run neorwc.ts",
+    "build": "bun build --compile --target=bun-windows-x64 ./neorwc.ts --outfile dist/neorwc",
+    "build:linux": "bun build --compile --target=bun-linux-x64 ./neorwc.ts --outfile dist/neorwc-linux",
+    "build:mac": "bun build --compile --target=bun-darwin-arm64 ./neorwc.ts --outfile dist/neorwc-mac"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["documentation", "ai", "cli"],
+  "author": "RK Riad Khan",
   "license": "ISC",
-  "type": "module",
   "dependencies": {
-    "axios": "^1.13.4",
-    "chalk": "^4.1.2",
-    "commander": "^14.0.3",
-    "diff": "^8.0.3",
-    "fs-extra": "^11.3.3",
-    "glob": "^10.5.0",
-    "inquirer": "^8.2.5",
-    "ora": "^5.4.1"
+    "citty": "^0.2.2",
+    "cli-spinners": "^3.4.0",
+    "listr2": "^10.2.1",
+    "modelpedia": "^0.0.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.8.0"
   }
 }

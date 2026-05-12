@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.exe
+*.wasm
+.neorwc
+.env
+.env.local
+.DS_Store
+Thumbs.db
+*.tsbuildinfo

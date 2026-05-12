@@ -2,57 +2,80 @@
 
 ![Logo](https://github.com/rkriad585/neorwc-cli/blob/main/logo/logo.svg)
 
-![Version](https://img.shields.io/badge/Version-v3.3.0-blue.svg)
-![Language](https://img.shields.io/badge/Language-JavaScript-yellow.svg)
-![License](https://img.shields.io/badge/License-Unspecified-lightgrey.svg)
+![Version](https://img.shields.io/badge/Version-v3.0.0-blue.svg)
+![Runtime](https://img.shields.io/badge/Runtime-Bun-purple.svg)
+![Language](https://img.shields.io/badge/Language-TypeScript-blue.svg)
 
-Neorwc is an AI-powered command-line interface designed to automate and streamline the generation of comprehensive project documentation.
+Neorwc is an AI-powered CLI for automating project documentation generation. Built with **Bun + TypeScript**, using **citty** for CLI parsing, **listr2** for task lists, **cli-spinners** for spinners, and **modelpedia** for AI model data.
 
 ## Features
 
-*   **AI-Driven Documentation:** Leverages advanced AI models (Ollama, Google Gemini) for high-quality output.
-*   **Multi-Model Support:** Seamlessly switch between local (Ollama) and cloud (Gemini) AI providers.
-*   **Customizable Generation:** Apply global plans and specific persona skills to tailor documentation output.
-*   **Context-Aware Scanning:** Intelligently scans project files, estimates token usage, and provides relevant context to the AI.
-*   **Template Management:** Initialize, list, and install remote documentation templates (plans and skills) from a GitHub repository.
-*   **Project State Management:** Persists project-specific settings and documentation state in a `.neorwc` file.
-*   **Dry-Run Mode:** Preview the AI's scanning and planning without writing any files.
+- AI-driven documentation using local (Ollama) and cloud (Gemini) models
+- Customizable persona skills and global plans
+- Context-aware project scanning with intelligent file filtering
+- Remote template installation from GitHub
+- Persistent project state across runs
+- Dry-run mode for previewing AI output
+
+## Prerequisites
+
+- [Bun](https://bun.sh) v1.2+ runtime
+- (Optional) [Ollama](https://ollama.com) for local AI models
+- (Optional) Google Gemini API key (set `NEORWC_GEMINI_KEY` env var)
 
 ## Installation
 
-To get started with Neorwc, you can install it globally via npm or link it for local development:
-
 ```bash
-# Install globally (if published to npm)
 git clone https://github.com/rkriad585/neorwc-cli
 cd neorwc-cli
-
-# for local development/linking:
-# After cloning the repository and navigating to its root:
-npm install
-npm link
-
-or
-./run
+bun install
 ```
 
-## Usage Example
-
-Here are a few examples of how to use the `neorwc` CLI:
+## Usage
 
 ```bash
-# Generate documentation using a specific skill, plan, and Gemini model
-neorwc -s neorwc-architect --plan usage-examples --model gemini-1.5-flash
+# Generate docs with default Ollama model
+bun run neorwc.ts
 
-# Generate documentation using a specific model (e.g., Ollama's default)
-neorwc --model llama3
+# Use a specific skill and Gemini model
+bun run neorwc.ts --skill neorwc-architect --model gemini-2.5-flash
 
-# Run with default settings (Ollama model, no specific plan/skill)
-neorwc
+# Initialize global config
+bun run neorwc.ts --init
+
+# List available templates
+bun run neorwc.ts --templates
+
+# Dry-run mode
+bun run neorwc.ts --dry-run
+
+# Build standalone binary
+bun run build
 ```
+
+## CLI Options
+
+| Flag | Alias | Description |
+|------|-------|-------------|
+| `--model` | `-m` | AI model to use (default: auto-detect) |
+| `--ctx` | `-c` | Override context window size |
+| `--plan` | `-p` | Use a global plan |
+| `--skill` | `-s` | Use a persona skill |
+| `--init` | `-n` | Initialize ~/.neorwc folder |
+| `--templates` | `-t` | List remote templates |
+| `--install` | `-i` | Install a template |
+| `--list` | `-l` | List installed resources |
+| `--dry-run` | `-d` | Scan without writing |
+
+## Tech Stack
+
+- **Runtime:** Bun
+- **Language:** TypeScript (strict)
+- **CLI:** citty
+- **Task UI:** listr2
+- **Spinners:** cli-spinners
+- **Model DB:** modelpedia
 
 ## License
 
-This project is currently under an unspecified license. Please refer to the project's repository for licensing details.
-
-written by Neorwc
+ISC
