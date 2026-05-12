@@ -1,11 +1,17 @@
 import { agentLoop } from "./agent.ts";
 import ollamaProvider from "../provider/ollama.ts";
 import geminiProvider from "../provider/gemini.ts";
+import openaiProvider from "../provider/openai.ts";
+import opencodeProvider from "../provider/opencode.ts";
 import type { AiProvider, ModelCapabilities } from "../provider/types.ts";
 
 // provider registry: prefix → provider
 const REGISTRY: Record<string, AiProvider> = {
   gemini: geminiProvider,
+  "gpt-": openaiProvider,
+  o1: openaiProvider,
+  o3: openaiProvider,
+  opencode: opencodeProvider,
 };
 
 // resolve which provider to use based on model name prefix

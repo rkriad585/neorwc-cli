@@ -2,6 +2,8 @@ import type { ToolCall } from "../tools/types.ts";
 import { buildToolDescriptions, findTool } from "../tools/registry.ts";
 import ollamaProvider from "../provider/ollama.ts";
 import geminiProvider from "../provider/gemini.ts";
+import openaiProvider from "../provider/openai.ts";
+import opencodeProvider from "../provider/opencode.ts";
 import type { AiProvider } from "../provider/types.ts";
 import { join, dirname } from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -10,6 +12,10 @@ import { config } from "./config.ts";
 // provider registry: same as ai.ts
 const REGISTRY: Record<string, AiProvider> = {
   gemini: geminiProvider,
+  "gpt-": openaiProvider,
+  o1: openaiProvider,
+  o3: openaiProvider,
+  opencode: opencodeProvider,
 };
 
 function resolveProvider(modelName: string): AiProvider {

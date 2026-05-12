@@ -29,8 +29,13 @@ export const config = {
   GEMINI_API_BASE: "https://generativelanguage.googleapis.com/v1beta/models" as const,
   GEMINI_DEFAULT_MODEL: "gemini-2.5-flash" as const,
 
+  OPENAI_API_BASE: "https://api.openai.com/v1/chat/completions" as const,
+  OPENCODE_API_BASE: "https://opencode.ai/zen/v1/chat/completions" as const,
+
   KEYS: {
     GEMINI: process.env.NEORWC_GEMINI_KEY ?? null,
+    OPENAI: process.env.OPENAI_API_KEY ?? null,
+    OPENCODE: process.env.NEORWC_OPENCODE_KEY ?? null,
   } as const,
 
   REPO_OWNER: "rkriad585" as const,
