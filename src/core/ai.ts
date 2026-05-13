@@ -95,6 +95,8 @@ Instructions: ${params.instructions}
 Project Context:
 ${params.context}
 
+Analyze the project and determine how many documentation files are needed. Create only the most relevant and useful documentation files for this project.
+
 Write documentation files to the docs/ folder.
 Use this format for each file:
 

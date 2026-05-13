@@ -21,14 +21,15 @@ function formatFile(filePath: string, content: string): string {
   return `\n\n=== FILE: ${filePath} ===\n${content}\n=== END FILE ===\n`;
 }
 
-export async function scanProject(rootDir: string): Promise<ScanResult> {
+export async function scanProject(rootDir: string, ignorePatterns?: string[]): Promise<ScanResult> {
   // use Bun's native glob for fast recursive file listing
   const glob = new Bun.Glob("**/*");
   const allFiles = await Array.fromAsync(glob.scan({ cwd: rootDir, dot: true }));
 
-  // filter files against ignore patterns
+  // filter files against ignore patterns (custom or default)
+  const patterns = ignorePatterns ?? config.IGNORE_PATTERNS;
   const files = allFiles.filter((file) => {
-    for (const pattern of config.IGNORE_PATTERNS) {
+    for (const pattern of patterns) {
       const parts = pattern.replace(/\*\*/g, "").split("/").filter(Boolean);
       if (parts.every((p) => file.includes(p))) return false;
     }

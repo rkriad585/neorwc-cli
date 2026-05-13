@@ -16,6 +16,7 @@ import { scanProject } from "./src/core/scanner.ts";
 import { generateDocumentation, getModelCapabilities } from "./src/core/ai.ts";
 import { loadState, saveState } from "./src/core/state.ts";
 import { listRemoteTemplates, installTemplate } from "./src/core/templates.ts";
+import { openConfigTUI } from "./src/core/config-tui.ts";
 import type { ScanResult } from "./src/core/scanner.ts";
 
 // Version: try build-time injection first, then runtime .version file
@@ -121,11 +122,13 @@ const main = defineCommand({
     list:     { type: "boolean", alias: "l", description: "List installed local resources, List available Global Skills" },
     "dry-run": { type: "boolean", alias: "d", description: "Scan and plan without writing files" },
     provider: { type: "string", alias: "p", description: "Provider (google, openai, ollama)", valueHint: "name" },
+    config:   { type: "boolean", alias: "g", description: "Open interactive TUI for editing configuration" },
   },
   async run({ args }) {
     const dryRun = (args as Record<string, unknown>)["dry-run"] as boolean | undefined;
 
     // --- Standalone flags ---
+    if (args.config)     { await openConfigTUI(); return; }
     if (args.templates)  { await listRemoteTemplates(); return; }
     if (args.install)    { await installTemplate(args.install as string); return; }
     if (args.init)       { return await handleInit(); }
@@ -228,17 +231,20 @@ const main = defineCommand({
           const timer = setInterval(() => {
             task.output = `${STATUSES[Math.floor(Math.random() * STATUSES.length)]}...`;
           }, 1200);
-          ctx.summary = await generateDocumentation({
-            model: selectedModel,
-            provider: selectedProvider,
-            context: scanResult.context,
-            instructions: combinedInstructions,
-            projectName,
-            ctxSize: contextLimit,
-            dryRun,
-          });
-          clearInterval(timer);
-          task.output = "Done";
+          try {
+            ctx.summary = await generateDocumentation({
+              model: selectedModel,
+              provider: selectedProvider,
+              context: scanResult.context,
+              instructions: combinedInstructions,
+              projectName,
+              ctxSize: contextLimit,
+              dryRun,
+            });
+            task.output = "Done";
+          } finally {
+            clearInterval(timer);
+          }
         },
       },
     ], { rendererOptions: { showTimer: true } });

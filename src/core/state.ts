@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { config } from "./config.ts";
 
 export interface AppState {
+  provider?: string;
   model?: string;
   ctx?: number;
   lastRun?: string;

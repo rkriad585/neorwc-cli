@@ -30,7 +30,7 @@ class OpenAIProvider implements AiProvider {
       const ctx = findModelContext(modelName);
       if (ctx) return { maxContext: ctx, exists: true };
     } catch {}
-    return { maxContext: defaultContext(), exists: true };
+    return { maxContext: defaultContext(), exists: false };
   }
 
   async generate(payload: GeneratePayload): Promise<string> {
