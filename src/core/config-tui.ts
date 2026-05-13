@@ -80,7 +80,7 @@ export async function openConfigTUI(): Promise<void> {
     blessed.box({
       parent: screen,
       bottom: 0, left: 0, width: "100%", height: 1,
-      content: " \u2191\u2193:Menu  Enter:Select  Tab:Focus field  Ctrl+S:Save  Esc:Back  C-c:Quit",
+      content: " \u2191\u2193:Menu  Enter:Select  Tab:Focus field  S-s:Save  Esc:Back  C-c:Quit",
       style: { fg: "white", bg: "blue" },
     });
 
@@ -170,10 +170,17 @@ export async function openConfigTUI(): Promise<void> {
         cfg.provider = PROVIDERS[idx];
         const models = getModelsForProvider(cfg.provider);
         if (models.length > 0) cfg.model = models[0].id;
-        // Update sidebar badge and re-render
+        if (providerEsc) screen.unkey(["escape"], providerEsc);
+        currentViewIndex = 1;
         updateSidebar();
-        showProviderPicker();
+        showModelPicker();
       });
+
+      const providerEsc = () => {
+        if (providerEsc) screen.unkey(["escape"], providerEsc);
+        renderWithMenuFocus();
+      };
+      screen.key(["escape"], providerEsc);
 
       list.focus();
       screen.render();
@@ -216,9 +223,17 @@ export async function openConfigTUI(): Promise<void> {
 
       list.on("select", (_item: any, idx: number) => {
         cfg.model = models[idx].id;
+        if (modelEsc) screen.unkey(["escape"], modelEsc);
+        currentViewIndex = 3;
         updateSidebar();
-        showModelPicker();
+        showApiKeysInput();
       });
+
+      const modelEsc = () => {
+        if (modelEsc) screen.unkey(["escape"], modelEsc);
+        renderWithMenuFocus();
+      };
+      screen.key(["escape"], modelEsc);
 
       list.focus();
       screen.render();
@@ -258,6 +273,10 @@ export async function openConfigTUI(): Promise<void> {
           cfg.ctx = Math.min(val, 2_097_152);
         }
         updateSidebar();
+        renderWithMenuFocus();
+      });
+
+      input.on("cancel", () => {
         renderWithMenuFocus();
       });
 
@@ -324,8 +343,9 @@ export async function openConfigTUI(): Promise<void> {
           cfg.googleKey = googleInput.value || googleInput.content || "";
           cfg.openaiKey = openaiInput.value || openaiInput.content || "";
           cleanupApiTab();
+          currentViewIndex = 5;
           updateSidebar();
-          renderWithMenuFocus();
+          showPreviewScreen();
         });
         inp.on("cancel", () => {
           cleanupApiTab();
@@ -368,8 +388,8 @@ export async function openConfigTUI(): Promise<void> {
       screen.render();
     }
 
-    // ─── Save & Exit handler ───
-    async function handleSaveAndExit(): Promise<void> {
+    // ─── Preview screen: shows summary, Enter=save, Esc=back ───
+    function showPreviewScreen(): void {
       clearContent();
 
       const patternList = cfg.ignorePatterns
@@ -377,8 +397,8 @@ export async function openConfigTUI(): Promise<void> {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      const summary = [
-        " Summary of changes:",
+      const lines = [
+        " Configuration Preview",
         "",
         "  Provider:         ".concat(cfg.provider),
         "  Model:            ".concat(cfg.model),
@@ -387,16 +407,46 @@ export async function openConfigTUI(): Promise<void> {
         "  OpenAI Key:       ".concat(cfg.openaiKey ? "****".concat(cfg.openaiKey.slice(-4)) : "(not set)"),
         "  Ignore Patterns:  ".concat(String(patternList.length), " patterns"),
         "",
-        "  Saving...",
+        "  [Enter] Save & Exit     [Esc] Go back and edit",
       ];
 
       blessed.box({
         parent: contentPanel,
-        top: 2, left: 2, width: "100%-4", height: summary.length + 1,
-        content: summary.join("\n"),
+        top: 2, left: 2, width: "100%-4", height: lines.length + 1,
+        content: lines.join("\n"),
         style: { fg: "green" },
       });
 
+      screen.render();
+
+      let handled = false;
+      const enterHandler = () => {
+        if (handled) return;
+        handled = true;
+        screen.unkey(["enter"], enterHandler);
+        screen.unkey(["escape"], escHandler);
+        performSave(patternList);
+      };
+      const escHandler = () => {
+        if (handled) return;
+        handled = true;
+        screen.unkey(["enter"], enterHandler);
+        screen.unkey(["escape"], escHandler);
+        renderWithMenuFocus();
+      };
+      screen.key(["enter"], enterHandler);
+      screen.key(["escape"], escHandler);
+    }
+
+    // ─── Save then show success / error ───
+    async function performSave(patternList: string[]): Promise<void> {
+      clearContent();
+      blessed.box({
+        parent: contentPanel,
+        top: 2, left: 2, width: "100%-4", height: 2,
+        content: " Saving...",
+        style: { fg: "green" },
+      });
       screen.render();
 
       try {
@@ -409,7 +459,6 @@ export async function openConfigTUI(): Promise<void> {
           ignorePatterns: patternList,
         });
 
-        // Show success message
         clearContent();
         blessed.box({
           parent: contentPanel,
@@ -418,7 +467,6 @@ export async function openConfigTUI(): Promise<void> {
           style: { fg: "green", bold: true },
         });
         screen.render();
-
         screen.once("keypress", () => {
           screen.destroy();
           resolve();
@@ -439,6 +487,11 @@ export async function openConfigTUI(): Promise<void> {
       }
     }
 
+    // ─── Save & Exit menu / S-s shortcut: show preview first ───
+    function handleSaveAndExit(): void {
+      showPreviewScreen();
+    }
+
     // ─── Update sidebar menu items with current state ───
     function updateSidebar(): void {
       const labels = [
@@ -453,21 +506,14 @@ export async function openConfigTUI(): Promise<void> {
     }
 
     // ─── Global keyboard shortcuts ───
-    screen.key(["C-s"], () => {
-      // Ctrl+S from anywhere — save and exit
+    screen.key(["S-s"], () => {
+      // Shift+S from anywhere — save and exit
       handleSaveAndExit();
     });
 
     screen.key(["C-c"], () => {
       screen.destroy();
       resolve();
-    });
-
-    screen.key(["escape"], () => {
-      // From content input views, go back to menu focus
-      if (currentViewIndex < 5) {
-        renderWithMenuFocus();
-      }
     });
 
     // ─── Show initial view (Provider) ───
