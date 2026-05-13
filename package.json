@@ -11,7 +11,8 @@
     "dev": "bun run neorwc.ts",
     "build": "bun run scripts/build.ts --target=bun-windows-x64",
     "build:linux": "bun run scripts/build.ts --target=bun-linux-x64",
-    "build:mac": "bun run scripts/build.ts --target=bun-darwin-arm64"
+    "build:mac": "bun run scripts/build.ts --target=bun-darwin-arm64",
+    "build:all": "powershell -File ./build.ps1"
   },
   "keywords": ["documentation", "neorwc", "neorwc-cli", "ai", "cli"],
   "author": "RK Riad Khan",
