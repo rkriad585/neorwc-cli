@@ -80,7 +80,7 @@ export async function openConfigTUI(): Promise<void> {
     blessed.box({
       parent: screen,
       bottom: 0, left: 0, width: "100%", height: 1,
-      content: " \u2191\u2193:Menu  Enter:Select  Tab:Focus field  S-s:Save  Esc:Back  C-c:Quit",
+      content: " \u2191\u2193:Menu  Enter:Select  Esc:Back  C-c:Quit",
       style: { fg: "white", bg: "blue" },
     });
 
@@ -170,14 +170,14 @@ export async function openConfigTUI(): Promise<void> {
         cfg.provider = PROVIDERS[idx];
         const models = getModelsForProvider(cfg.provider);
         if (models.length > 0) cfg.model = models[0].id;
-        if (providerEsc) screen.unkey(["escape"], providerEsc);
+        if (providerEsc) (screen.unkey as any)("escape", providerEsc);
         currentViewIndex = 1;
         updateSidebar();
         showModelPicker();
       });
 
       const providerEsc = () => {
-        if (providerEsc) screen.unkey(["escape"], providerEsc);
+        if (providerEsc) (screen.unkey as any)("escape", providerEsc);
         renderWithMenuFocus();
       };
       screen.key(["escape"], providerEsc);
@@ -223,14 +223,14 @@ export async function openConfigTUI(): Promise<void> {
 
       list.on("select", (_item: any, idx: number) => {
         cfg.model = models[idx].id;
-        if (modelEsc) screen.unkey(["escape"], modelEsc);
-        currentViewIndex = 3;
+        if (modelEsc) (screen.unkey as any)("escape", modelEsc);
+        currentViewIndex = 2;
         updateSidebar();
-        showApiKeysInput();
+        showContextInput();
       });
 
       const modelEsc = () => {
-        if (modelEsc) screen.unkey(["escape"], modelEsc);
+        if (modelEsc) (screen.unkey as any)("escape", modelEsc);
         renderWithMenuFocus();
       };
       screen.key(["escape"], modelEsc);
@@ -272,8 +272,9 @@ export async function openConfigTUI(): Promise<void> {
         if (!isNaN(val) && val >= 4096) {
           cfg.ctx = Math.min(val, 2_097_152);
         }
+        currentViewIndex = 3;
         updateSidebar();
-        renderWithMenuFocus();
+        showApiKeysInput();
       });
 
       input.on("cancel", () => {
@@ -343,9 +344,9 @@ export async function openConfigTUI(): Promise<void> {
           cfg.googleKey = googleInput.value || googleInput.content || "";
           cfg.openaiKey = openaiInput.value || openaiInput.content || "";
           cleanupApiTab();
-          currentViewIndex = 5;
+          currentViewIndex = 4;
           updateSidebar();
-          showPreviewScreen();
+          showIgnorePatterns();
         });
         inp.on("cancel", () => {
           cleanupApiTab();
@@ -376,8 +377,9 @@ export async function openConfigTUI(): Promise<void> {
 
       textarea.on("submit", () => {
         cfg.ignorePatterns = textarea.value || textarea.content || "";
+        currentViewIndex = 5;
         updateSidebar();
-        renderWithMenuFocus();
+        showPreviewScreen();
       });
 
       textarea.on("cancel", () => {
@@ -423,15 +425,15 @@ export async function openConfigTUI(): Promise<void> {
       const enterHandler = () => {
         if (handled) return;
         handled = true;
-        screen.unkey(["enter"], enterHandler);
-        screen.unkey(["escape"], escHandler);
+        (screen.unkey as any)("enter", enterHandler);
+        (screen.unkey as any)("escape", escHandler);
         performSave(patternList);
       };
       const escHandler = () => {
         if (handled) return;
         handled = true;
-        screen.unkey(["enter"], enterHandler);
-        screen.unkey(["escape"], escHandler);
+        (screen.unkey as any)("enter", enterHandler);
+        (screen.unkey as any)("escape", escHandler);
         renderWithMenuFocus();
       };
       screen.key(["enter"], enterHandler);
@@ -506,11 +508,6 @@ export async function openConfigTUI(): Promise<void> {
     }
 
     // ─── Global keyboard shortcuts ───
-    screen.key(["S-s"], () => {
-      // Shift+S from anywhere — save and exit
-      handleSaveAndExit();
-    });
-
     screen.key(["C-c"], () => {
       screen.destroy();
       resolve();
