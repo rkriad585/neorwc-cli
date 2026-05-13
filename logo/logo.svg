@@ -1,28 +1,67 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <title>Neorwc Logo</title>
-  <desc>A geometric abstract 'N' formed by two interlocking neon shapes representing Input and Output.</desc>
-  
-  <g id="Neorwc-Icon">
-    <!-- 
-      Shape 1: The Input & Process (Cyan) 
-      Represents: Read & Create. 
-      The left pillar and the diagonal bridge.
-    -->
-    <path 
-      id="Input-Flow"
-      d="M100 64C77.9086 64 60 81.9086 60 104V408C60 430.091 77.9086 448 100 448C122.091 448 140 430.091 140 408V206L278.2 433.6C285.6 445.8 298.8 452 312 452H320C342.1 452 360 434.1 360 412V364L136.4 68.6C128.8 58.4 116.2 55.4 106 60.2C104 61.2 102 62.4 100 64Z" 
-      fill="#00D8FF"
-    />
+  <defs>
+    <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#00D8FF"/>
+      <stop offset="100%" stop-color="#0099CC"/>
+    </linearGradient>
+    <linearGradient id="pinkGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FF0055"/>
+      <stop offset="100%" stop-color="#CC0044"/>
+    </linearGradient>
+    <linearGradient id="diagGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00D8FF"/>
+      <stop offset="50%" stop-color="#00FF99"/>
+      <stop offset="100%" stop-color="#FF0055"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glowSoft">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
 
-    <!-- 
-      Shape 2: The Output (Pink) 
-      Represents: Write. 
-      The standalone right pillar receiving the connection.
-    -->
-    <path 
-      id="Output-Flow"
-      d="M412 64C389.909 64 372 81.9086 372 104V312L452 418V104C452 81.909 434.09 64 412 64Z" 
-      fill="#FF0055"
-    />
-  </g>
+  <title>Neorwc Logo</title>
+  <desc>A modern geometric 'N' monogram representing Neo Read Write Create — an AI-powered documentation suite.</desc>
+
+  <!-- Background circle (dark theme) -->
+  <circle cx="256" cy="256" r="250" fill="#0D1117" stroke="#1E2A3A" stroke-width="2"/>
+
+  <!-- ========== Left Pillar — READ (Cyan) ========== -->
+  <rect x="96" y="88" width="48" height="256" rx="16" fill="url(#cyanGrad)" filter="url(#glow)"/>
+
+  <!-- Read indicator — subtle book/page lines -->
+  <rect x="104" y="108" width="32" height="3" rx="1.5" fill="#0D1117" opacity="0.3"/>
+  <rect x="104" y="118" width="32" height="3" rx="1.5" fill="#0D1117" opacity="0.3"/>
+  <rect x="104" y="128" width="20" height="3" rx="1.5" fill="#0D1117" opacity="0.3"/>
+
+  <!-- ========== Right Pillar — WRITE (Pink) ========== -->
+  <rect x="368" y="168" width="48" height="256" rx="16" fill="url(#pinkGrad)" filter="url(#glow)"/>
+
+  <!-- Write indicator — pen tip accent -->
+  <path d="M392 160 L384 176 L400 176 Z" fill="#FF0055" filter="url(#glow)"/>
+
+  <!-- ========== Diagonal — CREATE (Gradient) ========== -->
+  <!-- Main diagonal beam connecting Read → Write -->
+  <path d="M144 344 L368 232 V184 L144 296 Z" fill="url(#diagGrad)" filter="url(#glowSoft)" opacity="0.9"/>
+
+  <!-- ========== Neo / New accent — sparkle dot ========== -->
+  <circle cx="256" cy="128" r="12" fill="#00FF99" filter="url(#glow)"/>
+  <path d="M256 118 V138 M246 128 H266" stroke="#0D1117" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- ========== Brand name ========== -->
+  <text x="256" y="460" text-anchor="middle" font-family="'SF Mono', 'JetBrains Mono', 'Fira Code', monospace" font-size="32" font-weight="700" fill="#00D8FF" letter-spacing="6">
+    neorwc
+  </text>
+  <text x="256" y="484" text-anchor="middle" font-family="'SF Mono', 'JetBrains Mono', 'Fira Code', monospace" font-size="12" fill="#586069" letter-spacing="3">
+    NEO READ WRITE CREATE
+  </text>
 </svg>
