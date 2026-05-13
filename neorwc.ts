@@ -14,9 +14,9 @@ import { stdin as input, stdout as output } from "node:process";
 import { config } from "./src/core/config.ts";
 import { scanProject } from "./src/core/scanner.ts";
 import { generateDocumentation, getModelCapabilities } from "./src/core/ai.ts";
-import { loadState, saveState } from "./src/core/state.ts";
+import { loadMergedConfig, saveGlobalConfig } from "./src/core/config-manager.ts";
+import { saveState } from "./src/core/state.ts";
 import { listRemoteTemplates, installTemplate } from "./src/core/templates.ts";
-import { openConfigTUI } from "./src/core/config-tui.ts";
 import type { ScanResult } from "./src/core/scanner.ts";
 
 // Version: try build-time injection first, then runtime .version file
@@ -121,23 +121,23 @@ const main = defineCommand({
     install:  { type: "string", alias: "i", description: "Install a template (use \"all\" for everything)", valueHint: "name" },
     list:     { type: "boolean", alias: "l", description: "List installed local resources, List available Global Skills" },
     "dry-run": { type: "boolean", alias: "d", description: "Scan and plan without writing files" },
-    provider: { type: "string", alias: "p", description: "Provider (google, openai, ollama)", valueHint: "name" },
+    provider: { type: "string", alias: "p", description: "Provider (google, openai, anthropic, deepseek, mistral, cohere, ollama)", valueHint: "name" },
     config:   { type: "boolean", alias: "g", description: "Open interactive TUI for editing configuration" },
   },
   async run({ args }) {
     const dryRun = (args as Record<string, unknown>)["dry-run"] as boolean | undefined;
 
     // --- Standalone flags ---
-    if (args.config)     { await openConfigTUI(); return; }
+    if (args.config)     { const { openConfigTUI } = await import("./src/core/config-tui.ts"); await openConfigTUI(); return; }
     if (args.templates)  { await listRemoteTemplates(); return; }
     if (args.install)    { await installTemplate(args.install as string); return; }
     if (args.init)       { return await handleInit(); }
     if (args.list)       { return await handleList(); }
 
     // --- Main flow ---
-    const savedState = await loadState();
-    const selectedModel = (args.model as string) || savedState.model || config.DEFAULT_MODEL;
-    const selectedProvider = args.provider as string | undefined;
+    const mergedConfig = await loadMergedConfig();
+    const selectedModel = (args.model as string) || mergedConfig.model || config.DEFAULT_MODEL;
+    const selectedProvider = (args.provider as string) || mergedConfig.provider;
 
     logLogo();
     console.log(C.gray(`  Using Model: ${C.cyan(selectedModel)}${selectedProvider ? C.gray(`  Provider: ${C.cyan(selectedProvider)}`) : ""}`));
@@ -169,15 +169,19 @@ const main = defineCommand({
 
     const { modelCaps, scanResult } = await phase1.run();
 
-    // Resolve context: flag > saved state > model auto-detect > hard default
+    // Resolve context: flag > merged config > model auto-detect > hard default
     let contextLimit = 65536;
     if (args.ctx)            contextLimit = parseInt(args.ctx as string);
-    else if (savedState.ctx) contextLimit = savedState.ctx;
+    else if (mergedConfig.ctx) contextLimit = mergedConfig.ctx;
     else                     contextLimit = modelCaps.maxContext;
 
     console.log(`  ${C.green("\u2713")} Model loaded. Max Context: ${C.bold(String(contextLimit))} tokens.\n`);
 
-    await saveState({ model: selectedModel, ctx: contextLimit, lastRun: new Date().toISOString() });
+    // Persist settings globally AND locally so future runs pick them up
+    await Promise.all([
+      saveGlobalConfig({ provider: selectedProvider, model: selectedModel, ctx: contextLimit }),
+      saveState({ provider: selectedProvider, model: selectedModel, ctx: contextLimit, lastRun: new Date().toISOString() }),
+    ]);
 
     drawUsageBar(scanResult.tokenEstimate, contextLimit);
 
@@ -195,7 +199,7 @@ const main = defineCommand({
         combinedInstructions += `\n\n--- ADOPT THIS PERSONA (SKILL) ---\n${await readFile(skillPath, "utf-8")}`;
         console.log(C.hex(config.COLORS.info, `  + Loaded Skill: ${args.skill}`));
       } else {
-        console.log(C.red(`  x Skill '${args.skill}' not found in ~/.neorwc/skills`));
+        console.log(C.red(`  x Skill '${args.skill}' not found in ${config.GLOBAL_PATHS.SKILLS}`));
       }
     }
 
@@ -222,7 +226,7 @@ const main = defineCommand({
     if (!proceed) return;
 
     // 3. Single-shot generation: call provider once, parse file blocks
-    const STATUSES = ["Thinking", "Coocking", "Besting", "Bubling", "Working", "Creating"];
+    const STATUSES = ["Thinking", "Cooking", "Besting", "Bubbling", "Working", "Creating"];
     const phase2 = new Listr<{ summary: string }>([
       {
         title: "Generating documentation",
@@ -319,11 +323,10 @@ async function handleList(): Promise<void> {
 
   await printFiles(SKILLS, "Skills");
 
-  // Show modelpedia provider details: API URLs + model context windows
   const { getProvider, getModelsByProvider } = await import("modelpedia");
   console.log(C.bold("  Model Providers (via modelpedia):\n"));
 
-  for (const name of ["openai", "anthropic", "google"]) {
+  for (const name of ["openai", "anthropic", "google", "deepseek", "mistral", "cohere"]) {
     const provider = getProvider(name);
     const models = getModelsByProvider(name);
     if (!provider || models.length === 0) continue;
@@ -332,7 +335,6 @@ async function handleList(): Promise<void> {
     console.log(`      API: ${C.cyan(provider.api_url)}`);
     console.log(`      Models (${models.length} total):`);
 
-    // show first 3 models with context window details
     for (const m of models.slice(0, 3)) {
       const ctx = m.context_window ? `${m.context_window.toLocaleString()} tokens` : "context N/A";
       console.log(`        - ${m.id} (${ctx})`);

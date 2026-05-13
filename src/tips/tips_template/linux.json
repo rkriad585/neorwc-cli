@@ -1,0 +1,17 @@
+{
+  "category": "linux",
+  "tips": [
+    "Use grep -r for recursive search across files in a directory",
+    "Pipe commands together with | to build powerful one-liners",
+    "Use find with -exec to run commands on matching files",
+    "The history command shows your recent command history — use !n to replay",
+    "Use alias to create shortcuts for frequently used commands",
+    "Use watch to run a command repeatedly and see output changes",
+    "Use rsync for efficient file transfers and backups",
+    "The tree command visualizes directory structures",
+    "Use lsof to see which files and ports a process has open",
+    "Use htop for an interactive, human-friendly process manager",
+    "Use tmux to manage multiple terminal sessions in one window",
+    "The awk and sed commands are powerful for text processing"
+  ]
+}

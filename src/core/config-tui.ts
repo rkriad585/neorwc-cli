@@ -1,26 +1,62 @@
 // Blessed-based TUI for editing neorwc configuration
 // Sidebar navigation + dynamic content panel + keyboard shortcuts + mouse support
 
-import blessed from "blessed";
+import { createRequire } from "node:module";
+const __blessedRequire = createRequire(import.meta.url);
+// Force bun --compile to include blessed + all widget modules
+const blessed = __blessedRequire("blessed");
+__blessedRequire("blessed/lib/widgets/node");
+__blessedRequire("blessed/lib/widgets/screen");
+__blessedRequire("blessed/lib/widgets/element");
+__blessedRequire("blessed/lib/widgets/box");
+__blessedRequire("blessed/lib/widgets/text");
+__blessedRequire("blessed/lib/widgets/line");
+__blessedRequire("blessed/lib/widgets/scrollablebox");
+__blessedRequire("blessed/lib/widgets/scrollabletext");
+__blessedRequire("blessed/lib/widgets/bigtext");
+__blessedRequire("blessed/lib/widgets/list");
+__blessedRequire("blessed/lib/widgets/form");
+__blessedRequire("blessed/lib/widgets/input");
+__blessedRequire("blessed/lib/widgets/textarea");
+__blessedRequire("blessed/lib/widgets/textbox");
+__blessedRequire("blessed/lib/widgets/button");
+__blessedRequire("blessed/lib/widgets/progressbar");
+__blessedRequire("blessed/lib/widgets/filemanager");
+__blessedRequire("blessed/lib/widgets/checkbox");
+__blessedRequire("blessed/lib/widgets/radioset");
+__blessedRequire("blessed/lib/widgets/radiobutton");
+__blessedRequire("blessed/lib/widgets/prompt");
+__blessedRequire("blessed/lib/widgets/question");
+__blessedRequire("blessed/lib/widgets/message");
+__blessedRequire("blessed/lib/widgets/loading");
+__blessedRequire("blessed/lib/widgets/listbar");
+__blessedRequire("blessed/lib/widgets/log");
+__blessedRequire("blessed/lib/widgets/table");
+__blessedRequire("blessed/lib/widgets/listtable");
+
 import type { Widgets } from "blessed";
 import { getModelsByProvider } from "modelpedia";
 import { loadMergedConfig, saveTUIConfig } from "./config-manager.ts";
+import { IGNORE_PATTERNS } from "./config.ts";
 
-const PROVIDERS = ["google", "openai", "ollama"];
 
-// Human-readable provider labels
+
+const PROVIDERS = ["google", "openai", "anthropic", "deepseek", "mistral", "cohere", "ollama"];
+
 const PROVIDER_LABELS: Record<string, string> = {
   google: "Google",
   openai: "OpenAI",
+  anthropic: "Anthropic",
+  deepseek: "DeepSeek",
+  mistral: "Mistral",
+  cohere: "Cohere",
   ollama: "Ollama (Local)",
 };
 
 const MENU_ITEMS = [
   "AI Provider",
   "AI Model",
-  "Context Window",
   "API Keys",
-  "Ignore Patterns",
   "Save & Exit",
 ];
 
@@ -35,6 +71,10 @@ export async function openConfigTUI(): Promise<void> {
     ctx: merged.ctx,
     googleKey: merged.apiKeys.google ?? "",
     openaiKey: merged.apiKeys.openai ?? "",
+    anthropicKey: merged.apiKeys.anthropic ?? "",
+    deepseekKey: merged.apiKeys.deepseek ?? "",
+    mistralKey: merged.apiKeys.mistral ?? "",
+    cohereKey: merged.apiKeys.cohere ?? "",
     ignorePatterns: merged.ignorePatterns.join("\n"),
   };
 
@@ -80,7 +120,7 @@ export async function openConfigTUI(): Promise<void> {
     blessed.box({
       parent: screen,
       bottom: 0, left: 0, width: "100%", height: 1,
-      content: " \u2191\u2193:Menu  Enter:Select  Esc:Back  C-c:Quit",
+      content: " \u2191\u2193:Menu  Enter:Select  Esc:Back  i:Ignore  C-c:Quit",
       style: { fg: "white", bg: "blue" },
     });
 
@@ -89,6 +129,7 @@ export async function openConfigTUI(): Promise<void> {
       parent: screen,
       top: 1, left: 0, width: 22, bottom: 1,
       keys: true, vi: true, mouse: true,
+      tags: true,
       items: MENU_ITEMS.map((item, i) => (i === 0 ? "\u25b6 ".concat(item) : "  ".concat(item))),
       style: {
         selected: { fg: "white", bg: "blue" },
@@ -132,17 +173,19 @@ export async function openConfigTUI(): Promise<void> {
 
     // ─── Menu selection handler ───
     let currentViewIndex = 0;
+    let navigating = false;
 
     menuList.on("select", (_item: any, index: number) => {
+      if (navigating) return;
+      navigating = true;
       currentViewIndex = index;
       switch (index) {
         case 0: showProviderPicker(); break;
         case 1: showModelPicker(); break;
-        case 2: showContextInput(); break;
-        case 3: showApiKeysInput(); break;
-        case 4: showIgnorePatterns(); break;
-        case 5: handleSaveAndExit(); break;
+        case 2: showApiKeysInput(); break;
+        case 3: handleSaveAndExit(); break;
       }
+      navigating = false;
     });
 
     // ─── View 0: AI Provider list ───
@@ -187,17 +230,26 @@ export async function openConfigTUI(): Promise<void> {
     }
 
     // ─── View 1: AI Model list from modelpedia ───
+    let modelEsc: (() => void) | undefined;
+
     function showModelPicker(): void {
       clearContent();
       const models = getModelsForProvider(cfg.provider);
 
       infoLine(" Models for ".concat(cfg.provider, ":"));
 
+      const modelEscHandler = () => {
+        if (modelEsc) (screen.unkey as any)("escape", modelEsc);
+        renderWithMenuFocus();
+      };
+      modelEsc = modelEscHandler;
+      screen.key(["escape"], modelEsc);
+
       if (models.length === 0) {
         blessed.box({
           parent: contentPanel,
           top: 2, left: 2, width: "100%-4", height: 1,
-          content: " (No models found in modelpedia for \"".concat(cfg.provider, "\")"),
+          content: " (No models found in modelpedia for \"".concat(cfg.provider, "\")  [Esc to go back]"),
           style: { fg: "yellow" },
         });
         screen.render();
@@ -224,57 +276,96 @@ export async function openConfigTUI(): Promise<void> {
       list.on("select", (_item: any, idx: number) => {
         cfg.model = models[idx].id;
         if (modelEsc) (screen.unkey as any)("escape", modelEsc);
-        currentViewIndex = 2;
-        updateSidebar();
-        showContextInput();
+        if (cfg.provider === "ollama") {
+          currentViewIndex = 3;
+          updateSidebar();
+          showPreviewScreen();
+        } else {
+          currentViewIndex = 2;
+          updateSidebar();
+          showApiKeysInput();
+        }
       });
-
-      const modelEsc = () => {
-        if (modelEsc) (screen.unkey as any)("escape", modelEsc);
-        renderWithMenuFocus();
-      };
-      screen.key(["escape"], modelEsc);
 
       list.focus();
       screen.render();
     }
 
-    // ─── View 2: Context Window text input ───
-    function showContextInput(): void {
+    // ─── View 2: API Keys input (only for selected provider) ───
+    function showApiKeysInput(): void {
       clearContent();
-      infoLine(" Context Window (tokens):");
+
+      const apiKeyConfig: Record<string, { label: string; env: string; value: string; setter: (v: string) => void }> = {
+        google: {
+          label: "Google API Key",
+          env: "NEORWC_GOOGLE_KEY",
+          value: cfg.googleKey,
+          setter: (v) => { cfg.googleKey = v; },
+        },
+        openai: {
+          label: "OpenAI API Key",
+          env: "OPENAI_API_KEY",
+          value: cfg.openaiKey,
+          setter: (v) => { cfg.openaiKey = v; },
+        },
+        anthropic: {
+          label: "Anthropic API Key",
+          env: "ANTHROPIC_API_KEY",
+          value: cfg.anthropicKey,
+          setter: (v) => { cfg.anthropicKey = v; },
+        },
+        deepseek: {
+          label: "DeepSeek API Key",
+          env: "DEEPSEEK_API_KEY",
+          value: cfg.deepseekKey,
+          setter: (v) => { cfg.deepseekKey = v; },
+        },
+        mistral: {
+          label: "Mistral API Key",
+          env: "MISTRAL_API_KEY",
+          value: cfg.mistralKey,
+          setter: (v) => { cfg.mistralKey = v; },
+        },
+        cohere: {
+          label: "Cohere API Key",
+          env: "COHERE_API_KEY",
+          value: cfg.cohereKey,
+          setter: (v) => { cfg.cohereKey = v; },
+        },
+      };
+
+      const entry = apiKeyConfig[cfg.provider];
+      if (!entry) {
+        currentViewIndex = 3;
+        updateSidebar();
+        showPreviewScreen();
+        return;
+      }
+
+      infoLine(" ".concat(entry.label, " (saved to global config):"));
 
       blessed.box({
         parent: contentPanel,
         top: 2, left: 2, width: "100%-4", height: 1,
-        content: " Current: ".concat(cfg.ctx.toLocaleString(), " tokens"),
-        style: { fg: "green" },
+        content: " Enter your ".concat(entry.label, " (").concat(entry.env, "):"),
+        style: { fg: "white" },
       });
 
       const input = blessed.textbox({
         parent: contentPanel,
-        top: 4, left: 2, width: 20, height: 1,
-        content: String(cfg.ctx),
+        top: 3, left: 2, width: "80%", height: 1,
+        content: entry.value,
+        censor: true,
         inputOnFocus: true,
         mouse: true,
         style: { fg: "white", bg: "black", focus: { bg: "blue" } },
       });
 
-      blessed.box({
-        parent: contentPanel,
-        top: 4, left: 23, width: 40, height: 1,
-        content: " (min: 4096, max: 2097152, Enter to confirm)",
-        style: { fg: "gray" },
-      });
-
       input.on("submit", () => {
-        const val = parseInt(input.value || input.content, 10);
-        if (!isNaN(val) && val >= 4096) {
-          cfg.ctx = Math.min(val, 2_097_152);
-        }
+        entry.setter(input.value || input.content || "");
         currentViewIndex = 3;
         updateSidebar();
-        showApiKeysInput();
+        showPreviewScreen();
       });
 
       input.on("cancel", () => {
@@ -285,105 +376,61 @@ export async function openConfigTUI(): Promise<void> {
       screen.render();
     }
 
-    // ─── View 3: API Keys masked inputs ───
-    function showApiKeysInput(): void {
-      clearContent();
-      infoLine(" API Keys (saved to global config):");
-
-      blessed.box({
-        parent: contentPanel,
-        top: 2, left: 2, width: "100%-4", height: 1,
-        content: " Google API Key (NEORWC_GOOGLE_KEY):",
-        style: { fg: "white" },
-      });
-
-      const googleInput = blessed.textbox({
-        parent: contentPanel,
-        top: 3, left: 2, width: "80%", height: 1,
-        content: cfg.googleKey,
-        censor: true,
-        inputOnFocus: true,
-        mouse: true,
-        style: { fg: "white", bg: "black", focus: { bg: "blue" } },
+    // ─── Ignore Patterns popup (i key) ───
+    function showIgnorePopup(): void {
+      const overlay = blessed.box({
+        parent: screen,
+        top: "center", left: "center",
+        width: "70%", height: "60%",
+        border: { type: "line", fg: "cyan" },
+        style: { bg: "black" },
+        shadow: true,
       });
 
       blessed.box({
-        parent: contentPanel,
-        top: 5, left: 2, width: "100%-4", height: 1,
-        content: " OpenAI API Key (OPENAI_API_KEY):",
-        style: { fg: "white" },
+        parent: overlay,
+        top: 0, left: 1, width: "100%-2", height: 1,
+        content: " Ignore Patterns (one per line):",
+        style: { bold: true, fg: "cyan" },
       });
 
-      const openaiInput = blessed.textbox({
-        parent: contentPanel,
-        top: 6, left: 2, width: "80%", height: 1,
-        content: cfg.openaiKey,
-        censor: true,
-        inputOnFocus: true,
-        mouse: true,
-        style: { fg: "white", bg: "black", focus: { bg: "blue" } },
+      const defaultSnippet = IGNORE_PATTERNS.slice(0, 5).join(", ") + ", ...";
+      blessed.box({
+        parent: overlay,
+        top: 1, left: 1, width: "100%-2", height: 1,
+        content: " Defaults: ".concat(defaultSnippet, " (").concat(String(IGNORE_PATTERNS.length), " total)"),
+        style: { fg: "gray" },
       });
-
-      let activeInput = 0;
-      const inputs = [googleInput, openaiInput];
-      let tabHandler: (ch: any, key: any) => void;
-
-      // Tab between the two inputs
-      screen.key(["tab"], tabHandler = (_ch: any, _key: any) => {
-        activeInput = (activeInput + 1) % inputs.length;
-        inputs[activeInput].focus();
-        screen.render();
-      });
-
-      function cleanupApiTab(): void {
-        (screen.unkey as unknown as (keys: string, handler: any) => void)("tab", tabHandler);
-      }
-
-      for (const inp of inputs) {
-        inp.on("submit", () => {
-          cfg.googleKey = googleInput.value || googleInput.content || "";
-          cfg.openaiKey = openaiInput.value || openaiInput.content || "";
-          cleanupApiTab();
-          currentViewIndex = 4;
-          updateSidebar();
-          showIgnorePatterns();
-        });
-        inp.on("cancel", () => {
-          cleanupApiTab();
-          renderWithMenuFocus();
-        });
-      }
-
-      googleInput.focus();
-      screen.render();
-    }
-
-    // ─── View 4: Ignore Patterns textarea ───
-    function showIgnorePatterns(): void {
-      clearContent();
-      infoLine(" Ignore Patterns (one per line):");
 
       const textarea = blessed.textarea({
-        parent: contentPanel,
-        top: 2, left: 1, width: "100%-2", height: "100%-4",
+        parent: overlay,
+        top: 3, left: 1, width: "100%-2", height: "100%-5",
         content: cfg.ignorePatterns,
         inputOnFocus: true,
         mouse: true,
         scrollable: true,
         alwaysScroll: true,
         keys: true,
-        style: { fg: "white", bg: "black", focus: { bg: "blue" } },
+        style: { fg: "white", bg: "transparent", focus: { bg: "blue" } },
+      });
+
+      blessed.box({
+        parent: overlay,
+        bottom: 0, left: 1, width: "100%-2", height: 1,
+        content: " Enter: Save & Close   Esc: Close",
+        style: { fg: "gray" },
       });
 
       textarea.on("submit", () => {
         cfg.ignorePatterns = textarea.value || textarea.content || "";
-        currentViewIndex = 5;
-        updateSidebar();
-        showPreviewScreen();
+        overlay.detach();
+        screen.render();
       });
 
       textarea.on("cancel", () => {
-        renderWithMenuFocus();
+        cfg.ignorePatterns = textarea.value || textarea.content || "";
+        overlay.detach();
+        screen.render();
       });
 
       textarea.focus();
@@ -399,14 +446,26 @@ export async function openConfigTUI(): Promise<void> {
         .map((s) => s.trim())
         .filter(Boolean);
 
+      const keyEntries = [
+        { label: "Google Key", val: cfg.googleKey },
+        { label: "OpenAI Key", val: cfg.openaiKey },
+        { label: "Anthropic Key", val: cfg.anthropicKey },
+        { label: "DeepSeek Key", val: cfg.deepseekKey },
+        { label: "Mistral Key", val: cfg.mistralKey },
+        { label: "Cohere Key", val: cfg.cohereKey },
+      ];
+      const keyLines = keyEntries
+        .filter((e) => e.val)
+        .map((e) => "  ".concat(e.label, ":  ****").concat(e.val.slice(-4)));
+      if (keyLines.length === 0) keyLines.push("  (no API keys set)");
+
       const lines = [
         " Configuration Preview",
         "",
         "  Provider:         ".concat(cfg.provider),
         "  Model:            ".concat(cfg.model),
         "  Context:          ".concat(cfg.ctx.toLocaleString(), " tokens"),
-        "  Google Key:       ".concat(cfg.googleKey ? "****".concat(cfg.googleKey.slice(-4)) : "(not set)"),
-        "  OpenAI Key:       ".concat(cfg.openaiKey ? "****".concat(cfg.openaiKey.slice(-4)) : "(not set)"),
+        ...keyLines,
         "  Ignore Patterns:  ".concat(String(patternList.length), " patterns"),
         "",
         "  [Enter] Save & Exit     [Esc] Go back and edit",
@@ -458,6 +517,10 @@ export async function openConfigTUI(): Promise<void> {
           ctx: cfg.ctx,
           googleKey: cfg.googleKey,
           openaiKey: cfg.openaiKey,
+          anthropicKey: cfg.anthropicKey,
+          deepseekKey: cfg.deepseekKey,
+          mistralKey: cfg.mistralKey,
+          cohereKey: cfg.cohereKey,
           ignorePatterns: patternList,
         });
 
@@ -499,15 +562,21 @@ export async function openConfigTUI(): Promise<void> {
       const labels = [
         "Provider: ".concat(cfg.provider.slice(0, 12)),
         "Model: ".concat(cfg.model.length > 14 ? cfg.model.slice(0, 11).concat("...") : cfg.model),
-        "Context: ".concat(cfg.ctx.toLocaleString()),
         "API Keys",
-        "Ignore",
         "Save & Exit",
       ];
-      (menuList.setItems as (items: string[]) => void)(labels.map((item, i) => (i === currentViewIndex ? "\u25b6 ".concat(item) : "  ".concat(item))));
+      (menuList.setItems as (items: string[]) => void)(labels.map((item, i) => {
+        const prefix = i === currentViewIndex ? "\u25b6 " : "  ";
+        const style = i === currentViewIndex ? "{bold}" : "";
+        return prefix + style + item;
+      }));
     }
 
     // ─── Global keyboard shortcuts ───
+    screen.key(["i"], () => {
+      showIgnorePopup();
+    });
+
     screen.key(["C-c"], () => {
       screen.destroy();
       resolve();

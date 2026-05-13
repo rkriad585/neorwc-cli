@@ -1,0 +1,17 @@
+{
+  "category": "performance",
+  "tips": [
+    "Use async/await for I/O-bound operations to avoid blocking the event loop",
+    "Batch file reads and writes instead of one at a time for better throughput",
+    "Use Promise.all for independent concurrent operations",
+    "Cache expensive computations and API responses when possible",
+    "Use streaming for large files instead of loading them entirely into memory",
+    "Profile before optimizing — use console.time or Bun's built-in profiler",
+    "Minimize dependencies to reduce bundle size and startup time",
+    "Use lazy imports to defer loading of modules until they are needed",
+    "Avoid deep object cloning with JSON.parse(JSON.stringify(obj)) for large objects",
+    "Use Map and Set instead of plain objects for frequent lookups and insertions",
+    "Prefer for...of loops over forEach for better performance in hot paths",
+    "Use TypedArrays for working with binary data efficiently"
+  ]
+}

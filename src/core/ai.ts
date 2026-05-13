@@ -1,22 +1,33 @@
 import ollamaProvider from "../provider/ollama.ts";
 import googleProvider from "../provider/google.ts";
 import openaiProvider from "../provider/openai.ts";
+import anthropicProvider from "../provider/anthropic.ts";
+import deepseekProvider from "../provider/deepseek.ts";
+import mistralProvider from "../provider/mistral.ts";
+import cohereProvider from "../provider/cohere.ts";
 import type { AiProvider, ModelCapabilities } from "../provider/types.ts";
 import { join, dirname } from "node:path";
 import { mkdir, writeFile } from "node:fs/promises";
 import { config } from "./config.ts";
 
-// provider registry: prefix → provider
 const REGISTRY: Record<string, AiProvider> = {
   gemini: googleProvider,
   "gpt-": openaiProvider,
   o1: openaiProvider,
   o3: openaiProvider,
+  "claude": anthropicProvider,
+  "deepseek": deepseekProvider,
+  "mistral": mistralProvider,
+  "command": cohereProvider,
 };
 
 const PROVIDER_BY_NAME: Record<string, AiProvider> = {
   google: googleProvider,
   openai: openaiProvider,
+  anthropic: anthropicProvider,
+  deepseek: deepseekProvider,
+  mistral: mistralProvider,
+  cohere: cohereProvider,
   ollama: ollamaProvider,
 };
 

@@ -10,6 +10,10 @@
     "Use const assertions (as const) for literal types",
     "Branded types prevent accidental string/ID mixing",
     "Use satisfies + as const for typed object literals",
-    "Use the satisfies keyword to validate types without widening"
+    "Use the satisfies keyword to validate types without widening",
+    "Use 'as const' on arrays to infer literal tuple types",
+    "Template literal types enable string pattern matching at the type level",
+    "Use Extract and Exclude to filter union types",
+    "TypeScript 5.0 introduced const type parameters for inference"
   ]
 }

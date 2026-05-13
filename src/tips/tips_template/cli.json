@@ -1,0 +1,15 @@
+{
+  "category": "cli",
+  "tips": [
+    "Use --help to see all available commands and options",
+    "Use --dry-run to preview changes without making them",
+    "Combine flags for efficiency: neorwc --model gemini --ctx 65536",
+    "Environment variables override CLI defaults for API keys",
+    "Global config lives at ~/.config/neostore/neorwc/config.json",
+    "Use --config (-g) to open the interactive configuration TUI",
+    "Project-level settings are stored in docs/.neorwc",
+    "Press C-c to exit the TUI at any time",
+    "Arrow keys navigate menus, Enter selects, Esc goes back",
+    "Tab switches between input fields in API key screens"
+  ]
+}

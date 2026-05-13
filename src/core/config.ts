@@ -30,10 +30,18 @@ export const config = {
   GEMINI_DEFAULT_MODEL: "gemini-2.5-flash" as const,
 
   OPENAI_API_BASE: "https://api.openai.com/v1/chat/completions" as const,
+  ANTHROPIC_API_BASE: "https://api.anthropic.com/v1/messages" as const,
+  DEEPSEEK_API_BASE: "https://api.deepseek.com/v1/chat/completions" as const,
+  MISTRAL_API_BASE: "https://api.mistral.ai/v1/chat/completions" as const,
+  COHERE_API_BASE: "https://api.cohere.ai/v1/generate" as const,
 
   KEYS: {
     GOOGLE: process.env.NEORWC_GOOGLE_KEY ?? null,
     OPENAI: process.env.OPENAI_API_KEY ?? null,
+    ANTHROPIC: process.env.ANTHROPIC_API_KEY ?? null,
+    DEEPSEEK: process.env.DEEPSEEK_API_KEY ?? null,
+    MISTRAL: process.env.MISTRAL_API_KEY ?? null,
+    COHERE: process.env.COHERE_API_KEY ?? null,
   } as const,
 
   REPO_OWNER: "rkriad585" as const,

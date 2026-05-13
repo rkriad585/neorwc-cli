@@ -10,6 +10,15 @@
     "git stash — temporarily save uncommitted work",
     "git branch -d <name> — delete a merged branch locally",
     "Keep commits focused: one logical change per commit",
-    "git push --force-with-lease — safer force push than --force"
+    "git push --force-with-lease — safer force push than --force",
+    "git rebase -i HEAD~3 — squash, reword, or reorder the last 3 commits",
+    "git cherry-pick <hash> — apply a specific commit from another branch",
+    "git bisect — binary search to find the commit that introduced a bug",
+    "Use --no-verify to skip pre-commit hooks (use sparingly)",
+    "git diff — see unstaged changes before adding them",
+    "git log --graph --oneline — visualize branch history",
+    "git add -p — interactively stage hunks of changes",
+    "git rebase -i HEAD~3 — squash, reorder, or edit recent commits",
+    "git bisect — binary search through history to find a bug"
   ]
 }

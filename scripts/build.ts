@@ -32,6 +32,17 @@ writeFileSync(versionPath, versionModule, "utf-8");
 const targetArg = process.argv.find((a) => a.startsWith("--target="));
 const target = targetArg ? targetArg.split("=")[1] : "bun-windows-x64";
 
+// --- Patch blessed/widget.js for bun --compile support ---
+// blessed uses dynamic require('./widgets/' + file) which bun can't trace.
+// We wrap it in try/catch so missing optional widgets don't crash the bundle.
+const widgetJsPath = join(root, "node_modules", "blessed", "lib", "widget.js");
+const widgetJsOrig = readFileSync(widgetJsPath, "utf-8");
+const widgetJsPatched = widgetJsOrig.replace(
+  /widget\[name\] = widget\[file\] = require\('\.\/widgets\/' \+ file\);/,
+  "try { widget[name] = widget[file] = require('./widgets/' + file); } catch (e) {}",
+);
+writeFileSync(widgetJsPath, widgetJsPatched, "utf-8");
+
 console.log(`Building neorwc ${versionTag} (target: ${target})...`);
 
 // run bun build --compile
@@ -48,6 +59,9 @@ const proc = Bun.spawnSync([
 // forward stdout/stderr
 if (proc.stdout.length) writeFileSync(join(root, "dist", "build.log"), proc.stdout.toString());
 if (proc.stderr.length) console.error(proc.stderr.toString());
+
+// restore blessed/widget.js
+writeFileSync(widgetJsPath, widgetJsOrig, "utf-8");
 
 // restore original content or remove generated file
 if (originalContent) {

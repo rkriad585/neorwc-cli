@@ -1,0 +1,17 @@
+{
+  "category": "api",
+  "tips": [
+    "Use RESTful naming: plural nouns for resources (/users, /posts)",
+    "Return proper HTTP status codes — 200 OK, 201 Created, 400 Bad Request, 404 Not Found, 500 Server Error",
+    "Version your API from day one — /v1/users prevents breaking changes later",
+    "Use pagination for list endpoints — ?page=1&limit=20",
+    "Use query parameters for filtering, sorting, and searching",
+    "Return consistent error responses with a message and code field",
+    "Rate limit your APIs to prevent abuse and ensure fair usage",
+    "Use idempotency keys for mutating operations to safely retry requests",
+    "Document your API with OpenAPI/Swagger for developer experience",
+    "Use conditional requests with ETags for efficient caching",
+    "Validate all inputs server-side even if you validate client-side too",
+    "Use CORS headers to control which domains can access your API"
+  ]
+}

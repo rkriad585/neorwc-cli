@@ -1,4 +1,5 @@
 import { config } from "../core/config.ts";
+import { loadGlobalConfig } from "../core/config-manager.ts";
 import type { AiProvider, ModelCapabilities, GeneratePayload } from "./types.ts";
 import { getModelsByProvider } from "modelpedia";
 
@@ -34,9 +35,9 @@ class OpenAIProvider implements AiProvider {
   }
 
   async generate(payload: GeneratePayload): Promise<string> {
-    const apiKey = config.KEYS.OPENAI;
+    const apiKey = config.KEYS.OPENAI ?? (await loadGlobalConfig()).apiKeys?.openai ?? null;
     if (!apiKey) {
-      throw new Error("Missing OPENAI_API_KEY. Set OPENAI_API_KEY env var.");
+      throw new Error("Missing OpenAI API key. Set OPENAI_API_KEY env var or save it via `neorwc --config`.");
     }
 
     const body = {

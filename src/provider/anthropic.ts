@@ -3,7 +3,7 @@ import { loadGlobalConfig } from "../core/config-manager.ts";
 import type { AiProvider, ModelCapabilities, GeneratePayload } from "./types.ts";
 import { getModelsByProvider } from "modelpedia";
 
-const MODELPEDIA_PROVIDER = "google";
+const MODELPEDIA_PROVIDER = "anthropic";
 
 function defaultContext(): number {
   try {
@@ -11,7 +11,7 @@ function defaultContext(): number {
     const withCtx = models.find((m) => m.context_window);
     if (withCtx?.context_window) return withCtx.context_window;
   } catch {}
-  return 1_048_576;
+  return 200_000;
 }
 
 function findModelContext(modelName: string): number | undefined {
@@ -23,8 +23,8 @@ function findModelContext(modelName: string): number | undefined {
   return prefix?.context_window ?? undefined;
 }
 
-class GoogleProvider implements AiProvider {
-  readonly name = "google";
+class AnthropicProvider implements AiProvider {
+  readonly name = "anthropic";
 
   async getCapabilities(modelName: string): Promise<ModelCapabilities> {
     try {
@@ -35,37 +35,39 @@ class GoogleProvider implements AiProvider {
   }
 
   async generate(payload: GeneratePayload): Promise<string> {
-    const apiKey = config.KEYS.GOOGLE ?? (await loadGlobalConfig()).apiKeys?.google ?? null;
+    const apiKey = config.KEYS.ANTHROPIC ?? (await loadGlobalConfig()).apiKeys?.anthropic ?? null;
     if (!apiKey) {
-      throw new Error("Missing Google API key. Set NEORWC_GOOGLE_KEY env var or save it via `neorwc --config`.");
+      throw new Error("Missing Anthropic API key. Set ANTHROPIC_API_KEY env var or save it via `neorwc --config`.");
     }
 
-    const url = `${config.GEMINI_API_BASE}/${payload.model}:generateContent?key=${apiKey}`;
     const body = {
-      contents: [{ parts: [{ text: payload.prompt }] }],
-      generationConfig: {
-        temperature: payload.options.temperature,
-        maxOutputTokens: 524_288,
-      },
+      model: payload.model,
+      max_tokens: payload.options.num_ctx ?? 8192,
+      messages: [{ role: "user" as const, content: payload.prompt }],
+      temperature: payload.options.temperature,
     };
 
-    const response = await fetch(url, {
+    const response = await fetch(config.ANTHROPIC_API_BASE, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`Gemini API Error (${response.status}): ${err}`);
+      throw new Error(`Anthropic API Error (${response.status}): ${err}`);
     }
 
     const data = (await response.json()) as {
-      candidates?: { content?: { parts?: { text: string }[] } }[];
+      content?: { text?: string }[];
     };
 
-    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    return data.content?.[0]?.text ?? "";
   }
 }
 
-export default new GoogleProvider();
+export default new AnthropicProvider();

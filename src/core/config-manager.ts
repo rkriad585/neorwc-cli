@@ -8,9 +8,16 @@ import { config } from "./config.ts";
 import { loadState as loadProjectState, saveState as saveProjectState } from "./state.ts";
 
 export interface GlobalConfig {
+  provider?: string;
+  model?: string;
+  ctx?: number;
   apiKeys?: {
     google?: string;
     openai?: string;
+    anthropic?: string;
+    deepseek?: string;
+    mistral?: string;
+    cohere?: string;
   };
   ignorePatterns?: string[];
   lastUpdated?: string;
@@ -41,38 +48,55 @@ export async function saveGlobalConfig(data: Partial<GlobalConfig>): Promise<voi
   );
 }
 
-// Merged view: project-level provider/model/ctx + global apiKeys/ignorePatterns
+// Merged view: global config (primary) + project state fallback for provider/model/ctx
 export interface MergedConfig {
   provider: string;
   model: string;
   ctx: number;
-  apiKeys: { google?: string; openai?: string };
+  apiKeys: { google?: string; openai?: string; anthropic?: string; deepseek?: string; mistral?: string; cohere?: string };
   ignorePatterns: string[];
 }
 
-// Load and merge project state + global config
+// Load and merge: global config first, project state as fallback
 export async function loadMergedConfig(): Promise<MergedConfig> {
   const [global, project] = await Promise.all([loadGlobalConfig(), loadProjectState()]);
   return {
-    provider: project.provider ?? "ollama",
-    model: project.model ?? config.DEFAULT_MODEL,
-    ctx: project.ctx ?? 65536,
+    provider: global.provider ?? project.provider ?? "ollama",
+    model: global.model ?? project.model ?? config.DEFAULT_MODEL,
+    ctx: global.ctx ?? project.ctx ?? 65536,
     apiKeys: global.apiKeys ?? {},
     ignorePatterns: global.ignorePatterns ?? [...config.IGNORE_PATTERNS],
   };
 }
 
-// Save TUI edits: provider/model/ctx → project, apiKeys/ignorePatterns → global
+// Save TUI edits: everything to global config AND project state
 export async function saveTUIConfig(data: {
   provider: string;
   model: string;
   ctx: number;
   googleKey: string;
   openaiKey: string;
+  anthropicKey: string;
+  deepseekKey: string;
+  mistralKey: string;
+  cohereKey: string;
   ignorePatterns: string[];
 }): Promise<void> {
   await Promise.all([
     saveProjectState({ provider: data.provider, model: data.model, ctx: data.ctx, lastRun: new Date().toISOString() }),
-    saveGlobalConfig({ apiKeys: { google: data.googleKey || undefined, openai: data.openaiKey || undefined }, ignorePatterns: data.ignorePatterns }),
+    saveGlobalConfig({
+      provider: data.provider,
+      model: data.model,
+      ctx: data.ctx,
+      apiKeys: {
+        google: data.googleKey || undefined,
+        openai: data.openaiKey || undefined,
+        anthropic: data.anthropicKey || undefined,
+        deepseek: data.deepseekKey || undefined,
+        mistral: data.mistralKey || undefined,
+        cohere: data.cohereKey || undefined,
+      },
+      ignorePatterns: data.ignorePatterns,
+    }),
   ]);
 }

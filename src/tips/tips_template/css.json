@@ -1,0 +1,17 @@
+{
+  "category": "css",
+  "tips": [
+    "Use CSS custom properties (--variable) for consistent theming",
+    "Flexbox and Grid handle most layout needs without floats or hacks",
+    "Use media queries for responsive designs that adapt to any screen size",
+    "CSS nesting reduces repetition in modern stylesheets",
+    "Use container queries to style elements based on parent size, not viewport",
+    "The :has() selector lets you style a parent based on its children",
+    "Use logical properties (margin-inline, padding-block) for RTL support",
+    "Prefer rem units over px for scalable, accessible typography",
+    "CSS animations are more performant than JavaScript-driven animations",
+    "Use will-change to hint at elements that will animate for smoother rendering",
+    "Dark mode is easy with prefers-color-scheme media query",
+    "Layer imports with @layer to control cascade without specificity wars"
+  ]
+}

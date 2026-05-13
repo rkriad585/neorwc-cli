@@ -3,7 +3,7 @@ import { loadGlobalConfig } from "../core/config-manager.ts";
 import type { AiProvider, ModelCapabilities, GeneratePayload } from "./types.ts";
 import { getModelsByProvider } from "modelpedia";
 
-const MODELPEDIA_PROVIDER = "google";
+const MODELPEDIA_PROVIDER = "cohere";
 
 function defaultContext(): number {
   try {
@@ -11,7 +11,7 @@ function defaultContext(): number {
     const withCtx = models.find((m) => m.context_window);
     if (withCtx?.context_window) return withCtx.context_window;
   } catch {}
-  return 1_048_576;
+  return 128_000;
 }
 
 function findModelContext(modelName: string): number | undefined {
@@ -23,8 +23,8 @@ function findModelContext(modelName: string): number | undefined {
   return prefix?.context_window ?? undefined;
 }
 
-class GoogleProvider implements AiProvider {
-  readonly name = "google";
+class CohereProvider implements AiProvider {
+  readonly name = "cohere";
 
   async getCapabilities(modelName: string): Promise<ModelCapabilities> {
     try {
@@ -35,37 +35,39 @@ class GoogleProvider implements AiProvider {
   }
 
   async generate(payload: GeneratePayload): Promise<string> {
-    const apiKey = config.KEYS.GOOGLE ?? (await loadGlobalConfig()).apiKeys?.google ?? null;
+    const apiKey = config.KEYS.COHERE ?? (await loadGlobalConfig()).apiKeys?.cohere ?? null;
     if (!apiKey) {
-      throw new Error("Missing Google API key. Set NEORWC_GOOGLE_KEY env var or save it via `neorwc --config`.");
+      throw new Error("Missing Cohere API key. Set COHERE_API_KEY env var or save it via `neorwc --config`.");
     }
 
-    const url = `${config.GEMINI_API_BASE}/${payload.model}:generateContent?key=${apiKey}`;
     const body = {
-      contents: [{ parts: [{ text: payload.prompt }] }],
-      generationConfig: {
-        temperature: payload.options.temperature,
-        maxOutputTokens: 524_288,
-      },
+      model: payload.model,
+      message: payload.prompt,
+      max_tokens: payload.options.num_ctx ?? 4096,
+      temperature: payload.options.temperature,
     };
 
-    const response = await fetch(url, {
+    const response = await fetch(config.COHERE_API_BASE, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      throw new Error(`Gemini API Error (${response.status}): ${err}`);
+      throw new Error(`Cohere API Error (${response.status}): ${err}`);
     }
 
     const data = (await response.json()) as {
-      candidates?: { content?: { parts?: { text: string }[] } }[];
+      text?: string;
+      generation_id?: string;
     };
 
-    return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    return data.text ?? "";
   }
 }
 
-export default new GoogleProvider();
+export default new CohereProvider();

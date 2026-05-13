@@ -1,0 +1,15 @@
+{
+  "category": "json",
+  "tips": [
+    "Use JSON.parse() with try/catch to safely handle malformed data",
+    "JSON.stringify accepts a replacer function to filter or transform values",
+    "The space parameter in JSON.stringify pretty-prints output: JSON.stringify(obj, null, 2)",
+    "Use toJSON() methods on objects to customize serialization",
+    "JSON keys must be double-quoted — single quotes are invalid",
+    "Trailing commas are not allowed in JSON",
+    "Use JSON.parse(JSON.stringify(obj)) for a shallow clone of plain objects",
+    "Bun can import .json files directly: import data from './config.json'",
+    "JSON schema (JSON Schema) validates structure and types of JSON documents",
+    "Use reviver functions in JSON.parse to transform values during parsing"
+  ]
+}

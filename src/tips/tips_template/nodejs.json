@@ -1,0 +1,15 @@
+{
+  "category": "nodejs",
+  "tips": [
+    "Use fs.promises for async file operations instead of fs.callback",
+    "process.cwd() returns the current working directory, not the script location",
+    "import.meta.url gives the current module's file URL in ESM",
+    "Use path.join() or path.resolve() for cross-platform paths — never concatenate with /",
+    "os.homedir() returns the user's home directory across all platforms",
+    "Read environment variables with process.env.VAR_NAME",
+    "Use the --env-file flag in Bun to load .env files automatically",
+    "process.exit(code) terminates immediately — use for fatal errors only",
+    "child_process.execSync runs a command synchronously and returns stdout",
+    "Use AbortController to cancel fetch requests and timeouts"
+  ]
+}

@@ -53,12 +53,11 @@ export async function listRemoteTemplates(): Promise<void> {
   console.log("Remote Templates Available:\n");
 
   console.log("  Skills:");
-  if (skills.length === 0) console.log("    (No skills found)");
+  if (skills.length === 0) console.log("    (No skills found in remote repository)");
   for (const s of skills) console.log(`    - ${s}`);
 
-  // also show modelpedia provider info
   console.log("\n  Model Providers (via modelpedia):");
-  for (const provider of ["openai", "anthropic", "google"]) {
+  for (const provider of ["openai", "anthropic", "google", "deepseek", "mistral", "cohere"]) {
     const models = getModelsByProvider(provider);
     if (models.length > 0) {
       console.log(`    ${provider}: ${models.length} models available`);
@@ -72,6 +71,11 @@ export async function installTemplate(name: string): Promise<void> {
 
   if (name === "all") {
     const skills = await fetchList("skills");
+    if (skills.length === 0) {
+      console.log("No templates found in remote repository (github.com/".concat(config.REPO_OWNER, "/", config.REPO_NAME, "/contents/skills)."));
+      console.log("  Check the repository or contribute templates to make them available.");
+      return;
+    }
     console.log(`Downloading ${skills.length} templates...`);
     for (const s of skills) {
       if (await downloadFile("skills", s, SKILLS)) {

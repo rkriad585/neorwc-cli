@@ -1,0 +1,17 @@
+{
+  "category": "python",
+  "tips": [
+    "Use f-strings for readable string interpolation: f'Hello {name}'",
+    "Use type hints to make code self-documenting and IDE-friendly",
+    "List comprehensions are faster and more readable than map/filter",
+    "Use pathlib.Path instead of os.path for cross-platform path handling",
+    "Context managers (with statement) ensure proper resource cleanup",
+    "Use dataclasses to reduce boilerplate in data-holding classes",
+    "Prefer tuple unpacking over indexed access for paired data",
+    "Use enumerate() instead of range(len()) when you need both index and value",
+    "Virtual environments isolate dependencies per project",
+    "Use zip() to iterate over multiple sequences in parallel",
+    "Use generators (yield) for memory-efficient iteration over large datasets",
+    "The walrus operator (:=) assigns and evaluates in a single expression"
+  ]
+}

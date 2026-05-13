@@ -1,0 +1,17 @@
+{
+  "category": "docker",
+  "tips": [
+    "Use multi-stage builds to keep final images small",
+    "Order Dockerfile layers from least to most frequently changing for caching",
+    "Use .dockerignore to exclude node_modules and other unnecessary files",
+    "Prefer specific tags over 'latest' for reproducible builds",
+    "Use docker compose for local development with multiple services",
+    "Health checks let Docker know when your container is actually ready",
+    "Use --init flag to handle zombie processes in containers",
+    "Set resource limits with --memory and --cpus to prevent noisy neighbors",
+    "Use volumes for persistent data and bind mounts for development",
+    "Keep each container focused on a single concern",
+    "Use ARG for build-time variables and ENV for runtime configuration",
+    "Scan images with 'docker scout' for known vulnerabilities"
+  ]
+}

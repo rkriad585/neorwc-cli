@@ -1,0 +1,17 @@
+{
+  "category": "testing",
+  "tips": [
+    "Write tests before code — Test-Driven Development leads to better APIs",
+    "Use describe/it blocks to organize tests into readable specifications",
+    "Test edge cases: empty inputs, null values, boundary conditions",
+    "Mock external services to make tests fast and deterministic",
+    "Use code coverage reports to find untested paths in your codebase",
+    "Snapshot testing catches unintended UI or output changes",
+    "Run tests in CI to catch regressions before they reach production",
+    "Use property-based testing to find edge cases you didn't think of",
+    "Keep tests independent — each test should set up and tear down its own state",
+    "Name tests as sentences: 'it returns 404 when user is not found'",
+    "Use bun test for a fast, built-in test runner with TypeScript support",
+    "Test error paths, not just the happy path"
+  ]
+}

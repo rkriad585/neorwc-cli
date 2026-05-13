@@ -10,6 +10,15 @@
     "bunx <pkg> — run npm packages without installing",
     "Bun's native fetch API works in both source and compiled mode",
     "Use bun:sqlite for zero-config embedded databases",
-    "bun run dev — start the dev workflow from package.json scripts"
+    "bun run dev — start the dev workflow from package.json scripts",
+    "Bun's import.meta.glob eagerly loads all matching files for bundling",
+    "bun build --compile bundles everything into a single binary",
+    "Bun can run TypeScript directly without tsconfig or compilation",
+    "Use Bun.file() to read files efficiently without fs module",
+    "bun build --compile --target=bun-windows-x64 — cross-compile for Windows",
+    "bun build --compile --target=bun-linux-x64 — cross-compile for Linux",
+    "Bun natively runs .ts files without any config or ts-node",
+    "Use Bun.spawnSync for synchronous subprocess in build scripts",
+    "bun pm ls — list installed packages in the current project"
   ]
 }

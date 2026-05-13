@@ -1,0 +1,17 @@
+{
+  "category": "debugging",
+  "tips": [
+    "Use console.table() to display arrays and objects in a readable table format",
+    "console.time() and console.timeEnd() measure execution time of code blocks",
+    "Use debugger statements or browser DevTools breakpoints for step-by-step debugging",
+    "Log the full error object — console.error(err) is better than err.message alone",
+    "Use try/catch around JSON.parse and other fallible operations",
+    "Check network requests with the Network tab when debugging API issues",
+    "Reproduce bugs with minimal, isolated test cases before fixing",
+    "Add meaningful log context — include variable names alongside values",
+    "Use source maps to debug transpiled or minified code",
+    "Set custom log levels (info, warn, error, debug) to filter noise",
+    "Use Bun's --inspect flag to attach Chrome DevTools for debugging",
+    "Structured logging with JSON makes log parsing and querying easier"
+  ]
+}

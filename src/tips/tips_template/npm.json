@@ -1,0 +1,17 @@
+{
+  "category": "npm",
+  "tips": [
+    "Use npm audit to find and fix security vulnerabilities in dependencies",
+    "The npx command runs packages without installing them globally",
+    "Use npm outdated to see which dependencies have newer versions",
+    "Semantic versioning: ~1.2.3 means patch only, ^1.2.3 means minor and patch",
+    "Use package-lock.json to lock dependency versions for reproducible builds",
+    "Run npm ci in CI for faster, deterministic installs from lockfile",
+    "Use npm init -y to quickly scaffold a new package.json",
+    "The scripts section in package.json automates common tasks",
+    "Use npm link to test a local package in another project",
+    "Prefer npm install --save-exact for pinning dependency versions",
+    "Use overrides in package.json to force transitive dependency versions",
+    "npm pack creates a tarball to inspect what will be published"
+  ]
+}

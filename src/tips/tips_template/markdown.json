@@ -1,0 +1,17 @@
+{
+  "category": "markdown",
+  "tips": [
+    "Use fenced code blocks with language tags for syntax highlighting",
+    "Separate sections with H2 (##) rather than H1 for better document structure",
+    "Use tables for structured data with alignment markers",
+    "Add a table of contents at the top of long documents",
+    "Use blockquotes (> ) for important callouts and warnings",
+    "Use task lists (- [ ]) for tracking progress in documentation",
+    "Embed MermaidJS diagrams for architecture and flow visualization",
+    "Use definition lists for glossaries and key-value descriptions",
+    "Keep lines under 80 characters for better readability in diff views",
+    "Use reference-style links to keep document text clean and readable",
+    "Add alt text to all images for accessibility",
+    "Use <!-- comments --> for internal notes that shouldn't render"
+  ]
+}

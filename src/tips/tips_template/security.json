@@ -1,0 +1,17 @@
+{
+  "category": "security",
+  "tips": [
+    "Never commit API keys or secrets to version control",
+    "Store secrets in environment variables or a vault, never in source code",
+    "Use .env files with --env-file in Bun for local secret management",
+    "Always validate and sanitize user inputs to prevent injection attacks",
+    "Use HTTPS for all API calls in production environments",
+    "Implement rate limiting to protect against abuse and DoS attacks",
+    "Use the principle of least privilege for API keys and tokens",
+    "Regularly rotate API keys and credentials",
+    "Audit your dependencies with 'bun pm audit' for known vulnerabilities",
+    "Use Content Security Policy headers when serving web content",
+    "Never log sensitive data like passwords, tokens, or PII",
+    "Use Subresource Integrity (SRI) for loaded external scripts and styles"
+  ]
+}

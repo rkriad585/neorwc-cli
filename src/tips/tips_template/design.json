@@ -1,0 +1,17 @@
+{
+  "category": "design",
+  "tips": [
+    "Favor composition over inheritance for flexible code architectures",
+    "Use dependency injection to make code testable and decoupled",
+    "Follow the Single Responsibility Principle — one module, one reason to change",
+    "Program to interfaces, not implementations",
+    "Keep functions pure when possible — same input always produces same output",
+    "Use the Strategy pattern to swap algorithms at runtime",
+    "Separate concerns: IO, business logic, and presentation should be distinct layers",
+    "Use the Observer pattern for event-driven architectures",
+    "Don't repeat yourself (DRY) — extract shared logic into reusable modules",
+    "Encapsulate what varies — isolate volatile code behind stable interfaces",
+    "Use the Factory pattern to create objects without specifying concrete classes",
+    "Prefer small, focused modules over large monolithic files"
+  ]
+}

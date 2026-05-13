@@ -1,0 +1,17 @@
+{
+  "category": "database",
+  "tips": [
+    "Index columns used in WHERE, JOIN, and ORDER BY clauses for faster queries",
+    "Use EXPLAIN ANALYZE to understand how your database executes queries",
+    "Normalize data to reduce redundancy, but denormalize for read performance",
+    "Use parameterized queries to prevent SQL injection attacks",
+    "Connection pooling reduces the overhead of establishing database connections",
+    "Use transactions for operations that must be atomic — all or nothing",
+    "Back up your database regularly and test your restore process",
+    "Use migrations to version-control your database schema changes",
+    "Avoid SELECT * in production queries — name only the columns you need",
+    "Use LIMIT and OFFSET for pagination, but consider keyset pagination for scale",
+    "Monitor slow queries with a query log or observability tool",
+    "Choose the right database type: relational, document, key-value, or graph"
+  ]
+}
