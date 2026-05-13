@@ -32,7 +32,7 @@ export const config = {
   OPENAI_API_BASE: "https://api.openai.com/v1/chat/completions" as const,
 
   KEYS: {
-    GEMINI: process.env.NEORWC_GEMINI_KEY ?? null,
+    GOOGLE: process.env.NEORWC_GOOGLE_KEY ?? null,
     OPENAI: process.env.OPENAI_API_KEY ?? null,
   } as const,
 

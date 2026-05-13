@@ -10,7 +10,7 @@ const PROVIDERS = ["google", "openai", "ollama"];
 
 // Human-readable provider labels
 const PROVIDER_LABELS: Record<string, string> = {
-  google: "Google Gemini",
+  google: "Google",
   openai: "OpenAI",
   ollama: "Ollama (Local)",
 };
@@ -33,7 +33,7 @@ export async function openConfigTUI(): Promise<void> {
     provider: merged.provider,
     model: merged.model,
     ctx: merged.ctx,
-    geminiKey: merged.apiKeys.gemini ?? "",
+    googleKey: merged.apiKeys.google ?? "",
     openaiKey: merged.apiKeys.openai ?? "",
     ignorePatterns: merged.ignorePatterns.join("\n"),
   };
@@ -273,14 +273,14 @@ export async function openConfigTUI(): Promise<void> {
       blessed.box({
         parent: contentPanel,
         top: 2, left: 2, width: "100%-4", height: 1,
-        content: " Gemini API Key (NEORWC_GEMINI_KEY):",
+        content: " Google API Key (NEORWC_GOOGLE_KEY):",
         style: { fg: "white" },
       });
 
-      const geminiInput = blessed.textbox({
+      const googleInput = blessed.textbox({
         parent: contentPanel,
         top: 3, left: 2, width: "80%", height: 1,
-        content: cfg.geminiKey,
+        content: cfg.googleKey,
         censor: true,
         inputOnFocus: true,
         mouse: true,
@@ -305,7 +305,7 @@ export async function openConfigTUI(): Promise<void> {
       });
 
       let activeInput = 0;
-      const inputs = [geminiInput, openaiInput];
+      const inputs = [googleInput, openaiInput];
       let tabHandler: (ch: any, key: any) => void;
 
       // Tab between the two inputs
@@ -321,7 +321,7 @@ export async function openConfigTUI(): Promise<void> {
 
       for (const inp of inputs) {
         inp.on("submit", () => {
-          cfg.geminiKey = geminiInput.value || geminiInput.content || "";
+          cfg.googleKey = googleInput.value || googleInput.content || "";
           cfg.openaiKey = openaiInput.value || openaiInput.content || "";
           cleanupApiTab();
           updateSidebar();
@@ -333,7 +333,7 @@ export async function openConfigTUI(): Promise<void> {
         });
       }
 
-      geminiInput.focus();
+      googleInput.focus();
       screen.render();
     }
 
@@ -383,7 +383,7 @@ export async function openConfigTUI(): Promise<void> {
         "  Provider:         ".concat(cfg.provider),
         "  Model:            ".concat(cfg.model),
         "  Context:          ".concat(cfg.ctx.toLocaleString(), " tokens"),
-        "  Gemini Key:       ".concat(cfg.geminiKey ? "****".concat(cfg.geminiKey.slice(-4)) : "(not set)"),
+        "  Google Key:       ".concat(cfg.googleKey ? "****".concat(cfg.googleKey.slice(-4)) : "(not set)"),
         "  OpenAI Key:       ".concat(cfg.openaiKey ? "****".concat(cfg.openaiKey.slice(-4)) : "(not set)"),
         "  Ignore Patterns:  ".concat(String(patternList.length), " patterns"),
         "",
@@ -404,7 +404,7 @@ export async function openConfigTUI(): Promise<void> {
           provider: cfg.provider,
           model: cfg.model,
           ctx: cfg.ctx,
-          geminiKey: cfg.geminiKey,
+          googleKey: cfg.googleKey,
           openaiKey: cfg.openaiKey,
           ignorePatterns: patternList,
         });

@@ -34,9 +34,9 @@ class GoogleProvider implements AiProvider {
   }
 
   async generate(payload: GeneratePayload): Promise<string> {
-    const apiKey = config.KEYS.GEMINI;
+    const apiKey = config.KEYS.GOOGLE;
     if (!apiKey) {
-      throw new Error("Missing GEMINI_API_KEY. Set NEORWC_GEMINI_KEY env var.");
+      throw new Error("Missing Google API key. Set NEORWC_GOOGLE_KEY env var.");
     }
 
     const url = `${config.GEMINI_API_BASE}/${payload.model}:generateContent?key=${apiKey}`;

@@ -9,7 +9,7 @@ import { loadState as loadProjectState, saveState as saveProjectState } from "./
 
 export interface GlobalConfig {
   apiKeys?: {
-    gemini?: string;
+    google?: string;
     openai?: string;
   };
   ignorePatterns?: string[];
@@ -46,7 +46,7 @@ export interface MergedConfig {
   provider: string;
   model: string;
   ctx: number;
-  apiKeys: { gemini?: string; openai?: string };
+  apiKeys: { google?: string; openai?: string };
   ignorePatterns: string[];
 }
 
@@ -67,12 +67,12 @@ export async function saveTUIConfig(data: {
   provider: string;
   model: string;
   ctx: number;
-  geminiKey: string;
+  googleKey: string;
   openaiKey: string;
   ignorePatterns: string[];
 }): Promise<void> {
   await Promise.all([
     saveProjectState({ provider: data.provider, model: data.model, ctx: data.ctx, lastRun: new Date().toISOString() }),
-    saveGlobalConfig({ apiKeys: { gemini: data.geminiKey || undefined, openai: data.openaiKey || undefined }, ignorePatterns: data.ignorePatterns }),
+    saveGlobalConfig({ apiKeys: { google: data.googleKey || undefined, openai: data.openaiKey || undefined }, ignorePatterns: data.ignorePatterns }),
   ]);
 }
