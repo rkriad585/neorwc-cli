@@ -28,7 +28,7 @@ Handles prompt engineering and provider resolution. Wraps project context in a s
 Two-layer configuration:
 - **Global config** at `~/.config/neostore/neorwc/config.json`
 - **Project state** at `docs/.neorwc`
-- The **Config TUI** (`--config` / `-g`) is built with **blessed** and lets users select provider, model, enter API keys, and manage ignore patterns interactively.
+- The **Config TUI** (`--config` / `-g`) is built with **@clack/prompts** and lets users select provider, model, enter API keys, and manage ignore patterns interactively.
 
 ### 6. Template System (`src/core/templates.ts`)
 Lists and installs documentation templates from GitHub using **modelpedia** for model discovery.

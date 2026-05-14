@@ -19,7 +19,7 @@ Stored in your project's `docs/.neorwc` file. This tracks:
 - Project-specific context settings.
 
 ### The Configuration TUI
-neorwc includes a terminal-based UI (built with **blessed**) to manage settings without editing JSON manually.
+neorwc includes an interactive configuration wizard (built with **@clack/prompts**) to manage settings without editing JSON manually.
 ```bash
 # Launch the config TUI
 bun run neorwc.ts --config

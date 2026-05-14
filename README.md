@@ -161,12 +161,12 @@ The model list and context window sizes are fetched from **modelpedia** at runti
 `docs/.neorwc` — per-project state tracking the last used model, provider, and run timestamp.
 
 ### Config TUI
-The `--config` flag launches a full-screen terminal UI built with **blessed**:
-- **Sidebar navigation** (↑↓ keys)
+The `--config` flag launches an interactive configuration wizard built with **@clack/prompts**:
 - **Provider selection** — pick from all 7 providers
 - **Model selection** — browse models from modelpedia sorted by context size
-- **API key input** — shows only the relevant field for the selected provider
-- **Ignore patterns** — press `i` to edit glob patterns in a popup textarea
+- **API key input** — masked password prompt for the selected provider
+- **Ignore patterns** — multi-line editor for glob patterns
+- **Confirmation** — review and save with a single confirm prompt
 - **Preview & save** — review all settings before saving
 
 ### Environment Variables
@@ -304,7 +304,7 @@ neorwc.ts                  # CLI entry point (citty command definition)
 │   ├── ai.ts             # Provider resolution + prompt engineering + file writing
 │   ├── config.ts         # Constants (API URLs, paths, colors, ignore patterns)
 │   ├── config-manager.ts # Global config CRUD (load, save, merge)
-│   ├── config-tui.ts     # blessed-based interactive config TUI
+ │   ├── config-tui.ts     # @clack/prompts interactive config wizard
 │   ├── scanner.ts        # Project file scanner (Bun.Glob + ignore patterns)
 │   ├── state.ts          # Per-project state persistence
 │   ├── templates.ts      # Remote template fetching from GitHub API
@@ -323,7 +323,7 @@ neorwc.ts                  # CLI entry point (citty command definition)
 │   ├── index.ts          # Tip side-effect import
 │   └── tips_template/    # 20+ static JSON tip files
 ├── scripts/
-│   └── build.ts          # Build script (version injection + blessed patch + compile)
+ │   └── build.ts          # Build script (version injection + compile)
 ├── logo/
 │   └── logo.svg          # Project logo
 ├── build.ps1             # Cross-platform build (Windows)
