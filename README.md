@@ -287,7 +287,7 @@ The `--selfuninstall` flag removes:
 You can also uninstall via the installer scripts:
 ```powershell
 # Windows
-irm https://raw.githubusercontent.com/rkriad585/neorwc-cli/main/installer.ps1 | iex --selfuninstall
+$env:NEORWC_SELFUNINSTALL=1; irm https://raw.githubusercontent.com/rkriad585/neorwc-cli/main/installer.ps1 | iex
 ```
 ```bash
 # Linux / macOS

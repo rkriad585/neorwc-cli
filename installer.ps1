@@ -1,8 +1,8 @@
 #!/usr/bin/env pwsh
 # neorwc installer for Windows
 # Install:  irm https://raw.githubusercontent.com/rkriad585/neorwc-cli/main/installer.ps1 | iex
-# Uninstall: irm https://raw.githubusercontent.com/rkriad585/neorwc-cli/main/installer.ps1 | iex --selfuninstall
-# Or: Invoke-RestMethod -Uri "https://raw.githubusercontent.com/rkriad585/neorwc-cli/main/installer.ps1" | Invoke-Expression -ArgumentList "--selfuninstall"
+# Uninstall (env var): $env:NEORWC_SELFUNINSTALL=1; irm https://raw.githubusercontent.com/rkriad585/neorwc-cli/main/installer.ps1 | iex
+# Uninstall (direct): ./installer.ps1 --selfuninstall
 
 $ProjectName = "neorwc"
 $RepoName = "neorwc-cli"
@@ -12,7 +12,8 @@ $InstallDir = "$ConfigDir\bin"
 $BinaryPath = "$InstallDir\$ProjectName.exe"
 
 # ─── Self-uninstall mode ────────────────────────────────────────────────────
-if ($args -contains "--selfuninstall") {
+if ($args -contains "--selfuninstall" -or $env:NEORWC_SELFUNINSTALL -eq "1") {
+  $env:NEORWC_SELFUNINSTALL = $null
   Write-Host "Uninstalling $ProjectName..." -ForegroundColor Yellow
 
   # Remove the binary
