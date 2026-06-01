@@ -138,7 +138,7 @@ jobs:
             ext:      ''
 
           - label:    darwin/amd64
-            runner:   macos-13
+            runner:   macos-latest
             bun_target: bun-darwin-x64
             goos:     darwin
             goarch:   amd64
