@@ -13,7 +13,6 @@
     "build:linux": "bun run scripts/build.ts --target=bun-linux-x64",
     "build:mac": "bun run scripts/build.ts --target=bun-darwin-arm64",
     "build:all": "powershell -File ./build.ps1",
-    "build:win-arm64": "bun run scripts/build.ts --target=bun-windows-arm64",
     "build:linux-arm64": "bun run scripts/build.ts --target=bun-linux-arm64",
     "build:mac-intel": "bun run scripts/build.ts --target=bun-darwin-x64"
   },

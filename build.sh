@@ -51,7 +51,7 @@ echo "╚═══════════════════════�
 echo ""
 
 build_target "bun-windows-x64"   "windows" "amd64" ".exe"
-build_target "bun-windows-arm64"  "windows" "arm64" ".exe"
+# Windows ARM64: Bun doesn't support bun-windows-arm64 compile target
 build_target "bun-linux-x64"     "linux"   "amd64" ""
 build_target "bun-linux-arm64"   "linux"   "arm64" ""
 build_target "bun-darwin-x64"    "darwin"  "amd64" ""

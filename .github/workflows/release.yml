@@ -7,11 +7,12 @@
 #
 #  BINARY OUTPUT NAMES:
 #    neorwc-windows-amd64.exe   (Windows machine type 9  = AMD64)
-#    neorwc-windows-arm64.exe   (Windows machine type 12 = ARM64)
 #    neorwc-linux-amd64
 #    neorwc-linux-arm64
 #    neorwc-darwin-amd64
 #    neorwc-darwin-arm64
+#    NOTE: Windows ARM64 is not available because
+#    Bun does not support bun-windows-arm64 as a compile target.
 # ================================================================
 
 name: Auto Build & Release
@@ -118,12 +119,9 @@ jobs:
             goarch:   amd64
             ext:      .exe
 
-          - label:    windows/arm64
-            runner:   windows-latest
-            bun_target: bun-windows-arm64
-            goos:     windows
-            goarch:   arm64
-            ext:      .exe
+          # Note: bun-windows-arm64 is NOT a supported compile target in Bun.
+          # Bun only supports bun-windows-x64 for Windows cross-compilation.
+          # Windows ARM64 support may come in a future Bun release.
 
           - label:    linux/amd64
             runner:   ubuntu-latest
@@ -269,11 +267,12 @@ jobs:
             echo "| Platform | Architecture | File |"
             echo "|----------|-------------|------|"
             echo "| \U0001FAA5 Windows | AMD64 \`(machine type 9)\`  | \`${PROJECT}-windows-amd64.exe\` |"
-            echo "| \U0001FAA5 Windows | ARM64 \`(machine type 12)\` | \`${PROJECT}-windows-arm64.exe\` |"
             echo "| \U0001F427 Linux   | AMD64                     | \`${PROJECT}-linux-amd64\`       |"
             echo "| \U0001F427 Linux   | ARM64                     | \`${PROJECT}-linux-arm64\`       |"
             echo "| \U0001F34E macOS   | AMD64 (Intel)             | \`${PROJECT}-darwin-amd64\`      |"
             echo "| \U0001F34E macOS   | ARM64 (Apple Silicon)     | \`${PROJECT}-darwin-arm64\`      |"
+            echo ""
+            echo "> Note: Windows ARM64 is not available because Bun does not support \`bun-windows-arm64\` as a compile target."
             echo ""
             echo "## \u2705 Verify Checksum"
             echo ""

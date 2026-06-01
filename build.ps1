@@ -27,7 +27,7 @@ New-Item -ItemType Directory -Path $DistDir -Force | Out-Null
 
 $Targets = @(
   @{ Target = "bun-windows-x64";   Os = "windows"; Arch = "amd64"; Ext = ".exe" }
-  @{ Target = "bun-windows-arm64";  Os = "windows"; Arch = "arm64"; Ext = ".exe" }
+  # Windows ARM64: Bun doesn't support bun-windows-arm64 compile target
   @{ Target = "bun-linux-x64";     Os = "linux";   Arch = "amd64"; Ext = "" }
   @{ Target = "bun-linux-arm64";   Os = "linux";   Arch = "arm64"; Ext = "" }
   @{ Target = "bun-darwin-x64";    Os = "darwin";  Arch = "amd64"; Ext = "" }
