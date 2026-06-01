@@ -5,7 +5,7 @@
 ![Version](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Frkriad585%2Fneorwc-cli%2Fmain%2F.version&query=%24&prefix=v&label=Version&color=blue)
 ![Runtime](https://img.shields.io/badge/Runtime-Bun-purple.svg)
 ![Language](https://img.shields.io/badge/Language-TypeScript-blue.svg)
-![License](https://img.shields.io/badge/License-ISC-green.svg)
+![License](https://img.shields.io/badge/License-MIT-green.svg)
 
 **neorwc** (Neo Read Write Create) is an AI-powered CLI that automates project documentation generation. It scans your codebase, analyzes project structure, and generates structured documentation using large language models from 7 different providers.
 
@@ -225,7 +225,7 @@ bun install
 neorwc
 
 # Build standalone binary for current platform
-bun run scripts/build.ts
+bun run build
 
 # Build for a specific target
 bun run scripts/build.ts --target=bun-linux-x64
@@ -259,11 +259,57 @@ The build scripts:
 | Platform | Binary Name |
 |----------|-------------|
 | Windows x64 | `neorwc-windows-amd64.exe` |
-| Windows ARM64 | `neorwc-windows-arm64.exe` |
 | Linux x64 | `neorwc-linux-amd64` |
 | Linux ARM64 | `neorwc-linux-arm64` |
 | macOS Intel | `neorwc-darwin-amd64` |
 | macOS Apple Silicon | `neorwc-darwin-arm64` |
+
+### Makefile
+
+```bash
+make build       # Build current platform binary
+make build-all   # Build all 5 targets
+make run         # Run from source
+make test        # Type-check with tsc
+make lint        # Strict type-check
+make install     # Install dependencies
+make clean       # Remove build artifacts
+make docker      # Build Docker image
+make docker-run  # Run inside Docker container
+make release     # Build all binaries for release
+```
+
+### Docker
+
+```bash
+# Build the Docker image
+make docker
+
+# Or build manually
+docker build --build-arg VERSION=$(cat .version) -t neorwc .
+
+# Run with API keys mounted
+docker run --rm -it \
+  -v $(PWD):/workspace \
+  -e NEORWC_GOOGLE_KEY=your_key \
+  neorwc
+
+# Using docker-compose
+VERSION=v1.1.0 docker compose build
+VERSION=v1.1.0 docker compose up
+```
+
+The Docker image uses a multi-stage build:
+1. **Build stage** — `oven/bun:1.2` compiles the TypeScript to a standalone binary
+2. **Runtime stage** — `alpine:3.21` with only `ca-certificates` (~7 MB final image)
+
+### CMake
+
+CMakeLists.txt is provided for IDE integration. Actual build commands use Bun:
+
+```bash
+cmake -B build
+```
 
 ---
 
@@ -300,37 +346,23 @@ curl -fsSL https://raw.githubusercontent.com/rkriad585/neorwc-cli/main/installer
 
 ```
 neorwc.ts                  # CLI entry point (citty command definition)
-├── src/core/
-│   ├── ai.ts             # Provider resolution + prompt engineering + file writing
-│   ├── config.ts         # Constants (API URLs, paths, colors, ignore patterns)
-│   ├── config-manager.ts # Global config CRUD (load, save, merge)
- │   ├── config-tui.ts     # @clack/prompts interactive config wizard
-│   ├── scanner.ts        # Project file scanner (Bun.Glob + ignore patterns)
-│   ├── state.ts          # Per-project state persistence
-│   ├── templates.ts      # Remote template fetching from GitHub API
-│   └── __version.ts      # Auto-generated version injection
-├── src/provider/
-│   ├── google.ts         # Google Gemini provider
-│   ├── openai.ts         # OpenAI provider
-│   ├── anthropic.ts      # Anthropic Claude provider
-│   ├── deepseek.ts       # DeepSeek provider
-│   ├── mistral.ts        # Mistral provider
-│   ├── cohere.ts         # Cohere provider
-│   ├── ollama.ts         # Local Ollama provider
-│   └── types.ts          # AiProvider interface + types
-├── src/tips/
-│   ├── tips.ts           # Tip system (random selection, banner display)
-│   ├── index.ts          # Tip side-effect import
-│   └── tips_template/    # 20+ static JSON tip files
+├── src/
+│   ├── core/              # Core logic (config, scanner, AI orchestration, TUI)
+│   ├── provider/          # 7 AI provider implementations
+│   └── tips/              # Tip of the Day system (20+ categories)
 ├── scripts/
- │   └── build.ts          # Build script (version injection + compile)
+│   └── build.ts           # Standalone binary compiler
 ├── logo/
-│   └── logo.svg          # Project logo
-├── build.ps1             # Cross-platform build (Windows)
-├── build.sh              # Cross-platform build (Linux/macOS)
-├── installer.ps1         # One-line PowerShell installer
-├── installer.sh          # One-line shell installer
-└── .version              # Version file (e.g., "v1.0.0")
+│   └── logo.svg           # Project logo
+├── build.ps1              # Cross-platform build (Windows)
+├── build.sh               # Cross-platform build (Linux/macOS)
+├── installer.ps1          # One-line PowerShell installer
+├── installer.sh           # One-line shell installer
+├── Dockerfile             # Multi-stage Docker build
+├── docker-compose.yml     # Docker Compose configuration
+├── Makefile               # Build automation targets
+├── CMakeLists.txt         # CMake integration (IDE support)
+└── .version               # Version file (e.g., "v1.0.0")
 ```
 
 ---
@@ -360,6 +392,8 @@ bun run build
 
 ## License
 
-ISC
+MIT
 
-Copyright (c) 2024 RK Riad Khan
+Copyright (c) 2025 RK RIAD 585 (RK STUDIO 585)
+
+See [LICENSE](LICENSE) for full license text.

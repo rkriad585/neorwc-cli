@@ -1,0 +1,12 @@
+.git/
+.gitignore
+.gitattributes
+node_modules/
+dist/
+bin/
+*.md
+LICENSE*
+.vscode/
+.idea/
+*.log
+.DS_Store

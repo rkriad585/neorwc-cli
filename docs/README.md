@@ -1,18 +1,34 @@
-# docs/
+# neorwc Documentation
 
-Project documentation for neorwc. These docs are AI-generated and authored by Neorwc.
+Welcome to the neorwc documentation. This folder contains everything you need to get started, configure, and master neorwc.
 
-## Files
+## Getting Started
 
-| File | Description |
-|------|-------------|
-| `installation.md` | Installation guide covering npm, bun, and pre-built binaries |
-| `usage.md` | CLI usage examples and command reference |
-| `configuration.md` | Configuration file format, options, and environment variables |
-| `architecture.md` | High-level architecture overview of the codebase |
-| `introduction.md` | Introduction to the Neo Read Write Create workflow |
-| `tips-system.md` | How the contextual tip system works |
+| Guide | Description |
+|-------|-------------|
+| [Introduction](introduction.md) | Overview of neorwc and its capabilities |
+| [Installation](installation.md) | Install neorwc on Windows, Linux, or macOS |
+| [Quick Start](usage.md) | Generate your first documentation |
 
----
+## Configuration
 
-_written by Neorwc_
+| Guide | Description |
+|-------|-------------|
+| [Configuration Guide](configuration.md) | Global config, project state, environment variables |
+| [CLI Reference](cli-reference.md) | All flags, options, and commands |
+
+## Development & Building
+
+| Guide | Description |
+|-------|-------------|
+| [Build Guide](build-guide.md) | Build from source, cross-platform builds, Docker |
+| [Development](development.md) | Project structure, coding guidelines, adding providers |
+| [Deployment](deployment.md) | CI/CD, releases, Docker deployment |
+
+## Reference
+
+| Guide | Description |
+|-------|-------------|
+| [Architecture](architecture.md) | Codebase architecture and design decisions |
+| [Tip System](tips-system.md) | Built-in tip system and how to add new tips |
+| [Troubleshooting](troubleshooting.md) | Common issues and solutions |

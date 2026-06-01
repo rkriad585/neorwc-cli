@@ -1,0 +1,20 @@
+services:
+  neorwc:
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-0.0.0}
+        COMMIT: ${COMMIT:-unknown}
+    image: neorwc:latest
+    container_name: neorwc
+    environment:
+      - NEORWC_GOOGLE_KEY=${NEORWC_GOOGLE_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+      - COHERE_API_KEY=${COHERE_API_KEY:-}
+    volumes:
+      - .:/workspace
+    working_dir: /workspace
+    entrypoint: ["neorwc"]

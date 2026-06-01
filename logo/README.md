@@ -4,12 +4,12 @@ Contains the project logo — `logo.svg`.
 
 ## Design
 
-A dark-themed circular badge featuring a geometric `N` monogram built from three elements:
+A dark-themed circular badge with a geometric `N` monogram:
 
-- **Left pillar** (Cyan `#00D8FF`) — represents **Read**, with subtle book-page line accents
-- **Right pillar** (Pink `#FF0055`) — represents **Write**, with a pen-tip accent
-- **Diagonal beam** (Cyan → Green → Pink gradient) — connects the pillars and represents **Create**
-- **Green sparkle dot** (`#00FF99`) at the top center — represents **Neo** (new)
+- **Left bar** (Cyan `#00D8FF`) — **Read**
+- **Right bar** (Pink `#FF0055`) — **Write**
+- **Diagonal cross bar** (Cyan → Green → Pink) — **Create**
+- **Diamond** (Green `#00FF99`) at top — **Neo** (new)
 
 ### Brand colors
 
@@ -18,5 +18,5 @@ A dark-themed circular badge featuring a geometric `N` monogram built from three
 | Read / Cyan | `#00D8FF` |
 | Write / Pink | `#FF0055` |
 | Create / Diagonal | `#00D8FF → #00FF99 → #FF0055` |
-| Neo / Sparkle | `#00FF99` |
+| Neo / Diamond | `#00FF99` |
 | Background | `#0D1117` |

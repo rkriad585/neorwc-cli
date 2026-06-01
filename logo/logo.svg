@@ -1,67 +1,51 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="cyanGrad" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="gCyan" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#00D8FF"/>
-      <stop offset="100%" stop-color="#0099CC"/>
+      <stop offset="100%" stop-color="#00A3CC"/>
     </linearGradient>
-    <linearGradient id="pinkGrad" x1="0" y1="0" x2="0" y2="1">
+    <linearGradient id="gPink" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#FF0055"/>
       <stop offset="100%" stop-color="#CC0044"/>
     </linearGradient>
-    <linearGradient id="diagGrad" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="gNeo" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#00D8FF"/>
-      <stop offset="50%" stop-color="#00FF99"/>
+      <stop offset="40%" stop-color="#00FF99"/>
       <stop offset="100%" stop-color="#FF0055"/>
     </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="4" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <filter id="glowSoft">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+    <linearGradient id="gRing" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1E2A3A"/>
+      <stop offset="100%" stop-color="#0D1117"/>
+    </linearGradient>
   </defs>
 
-  <title>Neorwc Logo</title>
-  <desc>A modern geometric 'N' monogram representing Neo Read Write Create — an AI-powered documentation suite.</desc>
+  <title>Neorwc</title>
+  <desc>Neo Read Write Create — AI-powered documentation suite</desc>
 
-  <!-- Background circle (dark theme) -->
-  <circle cx="256" cy="256" r="250" fill="#0D1117" stroke="#1E2A3A" stroke-width="2"/>
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="248" fill="#0D1117" stroke="url(#gRing)" stroke-width="3"/>
 
-  <!-- ========== Left Pillar — READ (Cyan) ========== -->
-  <rect x="96" y="88" width="48" height="256" rx="16" fill="url(#cyanGrad)" filter="url(#glow)"/>
+  <!-- Inner ring -->
+  <circle cx="256" cy="256" r="236" fill="none" stroke="#1E2A3A" stroke-width="1" opacity="0.6"/>
 
-  <!-- Read indicator — subtle book/page lines -->
-  <rect x="104" y="108" width="32" height="3" rx="1.5" fill="#0D1117" opacity="0.3"/>
-  <rect x="104" y="118" width="32" height="3" rx="1.5" fill="#0D1117" opacity="0.3"/>
-  <rect x="104" y="128" width="20" height="3" rx="1.5" fill="#0D1117" opacity="0.3"/>
+  <!-- Left vertical bar — Read (Cyan) -->
+  <rect x="120" y="96" width="48" height="280" rx="24" fill="url(#gCyan)"/>
 
-  <!-- ========== Right Pillar — WRITE (Pink) ========== -->
-  <rect x="368" y="168" width="48" height="256" rx="16" fill="url(#pinkGrad)" filter="url(#glow)"/>
+  <!-- Right vertical bar — Write (Pink) -->
+  <rect x="344" y="136" width="48" height="280" rx="24" fill="url(#gPink)"/>
 
-  <!-- Write indicator — pen tip accent -->
-  <path d="M392 160 L384 176 L400 176 Z" fill="#FF0055" filter="url(#glow)"/>
+  <!-- Diagonal cross bar — Create (Gradient) -->
+  <path d="M168 376 L344 168 V136 L168 344 Z" fill="url(#gNeo)" opacity="0.85"/>
 
-  <!-- ========== Diagonal — CREATE (Gradient) ========== -->
-  <!-- Main diagonal beam connecting Read → Write -->
-  <path d="M144 344 L368 232 V184 L144 296 Z" fill="url(#diagGrad)" filter="url(#glowSoft)" opacity="0.9"/>
+  <!-- Neo accent — diamond -->
+  <polygon points="256,96 280,132 256,168 232,132" fill="#00FF99"/>
+  <rect x="250" y="124" width="12" height="16" rx="2" fill="#0D1117" opacity="0.3"/>
 
-  <!-- ========== Neo / New accent — sparkle dot ========== -->
-  <circle cx="256" cy="128" r="12" fill="#00FF99" filter="url(#glow)"/>
-  <path d="M256 118 V138 M246 128 H266" stroke="#0D1117" stroke-width="2.5" stroke-linecap="round"/>
-
-  <!-- ========== Brand name ========== -->
-  <text x="256" y="460" text-anchor="middle" font-family="'SF Mono', 'JetBrains Mono', 'Fira Code', monospace" font-size="32" font-weight="700" fill="#00D8FF" letter-spacing="6">
+  <!-- Brand name -->
+  <text x="256" y="446" text-anchor="middle" font-family="'Inter','SF Pro','Helvetica Neue',Arial,sans-serif" font-size="34" font-weight="700" fill="#00D8FF" letter-spacing="8">
     neorwc
   </text>
-  <text x="256" y="484" text-anchor="middle" font-family="'SF Mono', 'JetBrains Mono', 'Fira Code', monospace" font-size="12" fill="#586069" letter-spacing="3">
-    NEO READ WRITE CREATE
+  <text x="256" y="472" text-anchor="middle" font-family="'Inter','SF Pro','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="500" fill="#586069" letter-spacing="4">
+    NEO · READ · WRITE · CREATE
   </text>
 </svg>
