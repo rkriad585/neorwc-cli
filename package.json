@@ -1,6 +1,6 @@
 {
   "name": "neorwc",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Neorwc: AI-powered documentation suite (Bun + TypeScript)",
   "type": "module",
   "module": "neorwc.ts",

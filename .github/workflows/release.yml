@@ -2,7 +2,7 @@
 #  AUTO BUILD & RELEASE WORKFLOW
 # ================================================================
 #  HOW TO USE:
-#    1. Make sure your repo root has a `.version` file, e.g:  v1.0.0
+#    1. Make sure your repo root has a `.version` file, e.g:  v1.0.1
 #    2. Push a tag:  git tag vx.x.x && git push --tags
 #
 #  BINARY OUTPUT NAMES:
