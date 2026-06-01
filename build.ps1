@@ -3,91 +3,119 @@ param(
   [string]$Filter = "all"
 )
 
-$ProjectName = "neorwc"
-$RepoOwner = "rkriad585"
-$RepoEmail = "rkriad585@gmail.com"
+$ErrorActionPreference = "Stop"
 
-$VersionFile = ".version"
-if (-not (Test-Path $VersionFile)) {
-  Write-Host "ERROR: .version file not found" -ForegroundColor Red
-  exit 1
+# ── Configuration ────────────────────────────────────────────────────────────
+$BinaryName    = "neorwc"
+$PublisherName = "rkriad585"
+$PublisherEmail = "rkriad585@gmail.com"
+
+# ── Resolve version ─────────────────────────────────────────────────────────
+$VersionFile = Join-Path $PSScriptRoot ".version"
+if (Test-Path $VersionFile) {
+    $VersionTag = (Get-Content $VersionFile -Raw).Trim()
+    $Version = $VersionTag -replace "^v", ""
+} else {
+    $Version = "0.0.0"
+    Write-Warning ".version file not found, defaulting to $Version"
 }
-$VersionTag = (Get-Content $VersionFile -Raw).Trim()
-$Version = $VersionTag -replace "^v", ""
 
-$CommitHash = "unknown"
+# ── Resolve Git commit ──────────────────────────────────────────────────────
 try {
-  $CommitHash = (git rev-parse --short HEAD 2>$null).Trim()
-} catch {}
+    $Commit = (git rev-parse --short HEAD 2>$null).Trim()
+} catch {
+    $Commit = "unknown"
+}
+if ([string]::IsNullOrWhiteSpace($Commit)) { $Commit = "unknown" }
 
-$BinDir = Join-Path $PWD "bin"
-$DistDir = Join-Path $PWD "dist"
-New-Item -ItemType Directory -Path $BinDir -Force | Out-Null
-New-Item -ItemType Directory -Path $DistDir -Force | Out-Null
+# ── Detect host architecture ────────────────────────────────────────────────
+$procArch = (Get-CimInstance Win32_Processor | Select-Object -First 1).Architecture
+switch ($procArch) {
+    0  { $HostArch = "x86"   }
+    9  { $HostArch = "amd64" }
+    12 { $HostArch = "arm64" }
+    5  { $HostArch = "arm"   }
+    default { $HostArch = "unknown" }
+}
 
+# ── Banner ──────────────────────────────────────────────────────────────────
+Write-Host ""
+Write-Host "╔══════════════════════════════════════════════════╗" -ForegroundColor Cyan
+Write-Host "║          neorwc Cross-Platform Builder          ║" -ForegroundColor Cyan
+Write-Host "╚══════════════════════════════════════════════════╝" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  Version  : $VersionTag" -ForegroundColor Yellow
+Write-Host "  Commit   : $Commit" -ForegroundColor Yellow
+Write-Host "  Publisher: $PublisherName <$PublisherEmail>" -ForegroundColor Yellow
+Write-Host "  Host Arch: $HostArch (Win32_Processor=$procArch)" -ForegroundColor Yellow
+Write-Host ""
+
+# ── Target matrix ────────────────────────────────────────────────────────────
+# Bun compile targets: bun-{os}-{arch}
+# Binary output:       {project}-{os}-{arch}[.exe]
 $Targets = @(
-  @{ Target = "bun-windows-x64";   Os = "windows"; Arch = "amd64"; Ext = ".exe" }
-  # Windows ARM64: Bun doesn't support bun-windows-arm64 compile target
-  @{ Target = "bun-linux-x64";     Os = "linux";   Arch = "amd64"; Ext = "" }
-  @{ Target = "bun-linux-arm64";   Os = "linux";   Arch = "arm64"; Ext = "" }
-  @{ Target = "bun-darwin-x64";    Os = "darwin";  Arch = "amd64"; Ext = "" }
-  @{ Target = "bun-darwin-arm64";  Os = "darwin";  Arch = "arm64"; Ext = "" }
+    @{ BunTarget = "bun-windows-x64";   OS = "windows"; Arch = "amd64"; Ext = ".exe" }
+    @{ BunTarget = "bun-linux-x64";     OS = "linux";   Arch = "amd64"; Ext = ""     }
+    @{ BunTarget = "bun-linux-arm64";   OS = "linux";   Arch = "arm64"; Ext = ""     }
+    @{ BunTarget = "bun-darwin-x64";    OS = "darwin";  Arch = "amd64"; Ext = ""     }
+    @{ BunTarget = "bun-darwin-arm64";  OS = "darwin";  Arch = "arm64"; Ext = ""     }
 )
 
-Write-Host ""
-Write-Host "╔══════════════════════════════════════════════╗"
-Write-Host "║        neorwc v$Version Cross-Platform Build     ║"
-Write-Host "║        Commit: $CommitHash                         " -NoNewLine
-Write-Host "║"
-Write-Host "║        Publisher: $RepoOwner"
-Write-Host "╚══════════════════════════════════════════════╝"
-Write-Host ""
-
-$Rcedit = Get-Command "rcedit" -ErrorAction SilentlyContinue
-
-function Add-VersionInfo {
-  param([string]$ExePath)
-  if (-not $Rcedit) { return }
-  try {
-    & $Rcedit $ExePath --set-version-string "CompanyName" $RepoOwner
-    & $Rcedit $ExePath --set-version-string "FileDescription" "neorwc - AI-powered documentation suite"
-    & $Rcedit $ExePath --set-version-string "ProductName" "neorwc"
-    & $Rcedit $ExePath --set-version-string "LegalCopyright" "Copyright (c) $RepoOwner"
-    & $Rcedit $ExePath --set-file-version $Version
-    & $Rcedit $ExePath --set-product-version $Version
-    Write-Host "  Added version info to $ExePath" -ForegroundColor Gray
-  } catch {}
+# ── Prepare output directory ─────────────────────────────────────────────────
+$OutDir = Join-Path $PSScriptRoot "bin"
+if (-not (Test-Path $OutDir)) {
+    New-Item -ItemType Directory -Path $OutDir -Force | Out-Null
 }
 
-foreach ($T in $Targets) {
-  $OsFilter = $T.Os
-  if ($Filter -ne "all" -and $Filter -ne $OsFilter) { continue }
+# ── Build loop ───────────────────────────────────────────────────────────────
+$Built   = 0
+$Failed  = 0
+$Total   = $Targets.Count
+$StartTime = Get-Date
 
-  $OutName = "$ProjectName-$($T.Os)-$($T.Arch)$($T.Ext)"
-  $OutPath = Join-Path $BinDir $OutName
+foreach ($t in $Targets) {
+    if ($Filter -ne "all" -and $Filter -ne $t.OS) { continue }
 
-  Write-Host "Building $OutName ..." -ForegroundColor Cyan
+    $OutName = "$BinaryName-$($t.OS)-$($t.Arch)$($t.Ext)"
+    $OutPath = Join-Path $OutDir $OutName
 
-  $env:COMMIT_SHA = $CommitHash
-  $env:PUBLISHER_NAME = $RepoOwner
-  $env:PUBLISHER_EMAIL = $RepoEmail
+    $idx = $Built + $Failed + 1
+    Write-Host "  [$idx/$Total] Building $OutName ... " -NoNewline -ForegroundColor White
 
-  $Proc = Start-Process -FilePath "bun" -ArgumentList "run", "scripts/build.ts", "--target=$($T.Target)", "--outfile=$OutPath" -Wait -NoNewWindow -PassThru -Environment @{
-    COMMIT_SHA = $CommitHash
-    PUBLISHER_NAME = $RepoOwner
-    PUBLISHER_EMAIL = $RepoEmail
-  }
-  if ($Proc.ExitCode -ne 0) {
-    Write-Host "  FAILED (exit code $($Proc.ExitCode))" -ForegroundColor Red
-    continue
-  }
+    $env:COMMIT_SHA = $Commit
+    $env:PUBLISHER_NAME = $PublisherName
+    $env:PUBLISHER_EMAIL = $PublisherEmail
 
-  if ($T.Ext -eq ".exe") {
-    Add-VersionInfo -ExePath $OutPath
-    Write-Host "  -> $OutName" -ForegroundColor Green
-  }
+    try {
+        $proc = Start-Process -FilePath "bun" -ArgumentList "run", "scripts/build.ts", "--target=$($t.BunTarget)", "--outfile=$OutPath" -Wait -NoNewWindow -PassThru
+        if ($proc.ExitCode -ne 0) { throw "bun build exited with code $($proc.ExitCode)" }
+
+        $size = [math]::Round((Get-Item $OutPath).Length / 1MB, 2)
+        Write-Host "OK (${size} MB)" -ForegroundColor Green
+        $Built++
+    } catch {
+        Write-Host "FAILED" -ForegroundColor Red
+        Write-Warning "  $($_.Exception.Message)"
+        $Failed++
+    }
 }
 
+# ── Cleanup environment ─────────────────────────────────────────────────────
+Remove-Item Env:COMMIT_SHA -ErrorAction SilentlyContinue
+Remove-Item Env:PUBLISHER_NAME -ErrorAction SilentlyContinue
+Remove-Item Env:PUBLISHER_EMAIL -ErrorAction SilentlyContinue
+
+# ── Summary ──────────────────────────────────────────────────────────────────
+$Duration = (Get-Date) - $StartTime
 Write-Host ""
-Write-Host "Done. Binaries in: $BinDir" -ForegroundColor Green
-Get-ChildItem $BinDir | Select-Object Name, Length | Format-Table -AutoSize
+Write-Host "══════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host "  Build complete in $([math]::Round($Duration.TotalSeconds, 1))s" -ForegroundColor Cyan
+Write-Host "  Success: $Built / $Total" -ForegroundColor $(if ($Failed -eq 0) { "Green" } else { "Yellow" })
+if ($Failed -gt 0) {
+    Write-Host "  Failed : $Failed / $Total" -ForegroundColor Red
+}
+Write-Host "  Output : $OutDir" -ForegroundColor Cyan
+Write-Host "══════════════════════════════════════════════════" -ForegroundColor Cyan
+Write-Host ""
+
+if ($Failed -gt 0) { exit 1 }

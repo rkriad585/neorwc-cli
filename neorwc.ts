@@ -8,7 +8,7 @@ import { Listr } from "listr2";
 import cliSpinners, { randomSpinner } from "cli-spinners";
 import { basename, join, resolve } from "node:path";
 import { existsSync, readFileSync, unlinkSync, rmSync, readdirSync, lstatSync, realpathSync, writeFileSync } from "node:fs";
-import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
+import { mkdir, writeFile, readFile, readdir, rename } from "node:fs/promises";
 import * as readline from "node:readline/promises";
 import { stdin as input, stdout as output, execPath, argv } from "node:process";
 import { platform, tmpdir } from "node:os";
@@ -126,14 +126,25 @@ const main = defineCommand({
     provider: { type: "string", alias: "p", description: "Provider (google, openai, anthropic, deepseek, mistral, cohere, ollama)", valueHint: "name" },
      config:   { type: "boolean", alias: "g", description: "Open interactive TUI for editing configuration" },
     selfuninstall: { type: "boolean", description: "Uninstall neorwc and remove all config files" },
+    uninstall: { type: "boolean", description: "Uninstall neorwc and remove all config files" },
     update: { type: "boolean", alias: "u", description: "Self-update neorwc to the latest version" },
+    "self-update": { type: "boolean", description: "Self-update neorwc to the latest version" },
+    proxy: { type: "string", description: "Proxy URL for self-update (e.g., http://127.0.0.1:8080)", valueHint: "url" },
   },
   async run({ args }) {
     const dryRun = (args as Record<string, unknown>)["dry-run"] as boolean | undefined;
 
     // --- Standalone flags ---
-    if (args.selfuninstall) { handleSelfUninstall(); return; }
-    if (args.update)     { await handleUpdate(); return; }
+    if (args.selfuninstall || args.uninstall) { handleSelfUninstall(); return; }
+    if (args.update || args["self-update"]) {
+      const proxyUrl = (args.proxy as string) || "";
+      if (proxyUrl) {
+        process.env.HTTP_PROXY = proxyUrl;
+        process.env.HTTPS_PROXY = proxyUrl;
+      }
+      await handleUpdate();
+      return;
+    }
     if (args.config)     { const { openConfigTUI } = await import("./src/core/config-tui.ts"); await openConfigTUI(); return; }
     if (args.templates)  { await listRemoteTemplates(); return; }
     if (args.install)    { await installTemplate(args.install as string); return; }
@@ -362,28 +373,31 @@ async function handleList(): Promise<void> {
  }
 
 function handleSelfUninstall(): void {
-   const { ROOT: configDir } = config.GLOBAL_PATHS;
-   const isWindows = platform() === "win32";
+  const { ROOT: configDir } = config.GLOBAL_PATHS;
+  const isWindows = platform() === "win32";
 
-   let binaryPath: string;
-   try {
-     if (typeof Bun !== "undefined") {
-       binaryPath = realpathSync(argv[1] || execPath);
-     } else {
-       binaryPath = realpathSync(execPath);
-     }
-   } catch {
-     binaryPath = realpathSync(execPath);
-   }
-   binaryPath = resolve(binaryPath);
-   const configDirResolved = resolve(configDir);
-   const sep = isWindows ? "\\" : "/";
-   const configPrefix = configDirResolved.endsWith(sep) ? configDirResolved : configDirResolved + sep;
-   const isBinaryInsideConfig = isWindows
-     ? binaryPath.toLowerCase().startsWith(configPrefix.toLowerCase())
-     : binaryPath.startsWith(configPrefix);
+  let binaryPath: string;
+  try {
+    if (typeof Bun !== "undefined") {
+      binaryPath = realpathSync(argv[1] || execPath);
+    } else {
+      binaryPath = realpathSync(execPath);
+    }
+  } catch {
+    binaryPath = realpathSync(execPath);
+  }
+  binaryPath = resolve(binaryPath);
+  const configDirResolved = resolve(configDir);
+  const sep = isWindows ? "\\" : "/";
+  const configPrefix = configDirResolved.endsWith(sep) ? configDirResolved : configDirResolved + sep;
+  const isBinaryInsideConfig = isWindows
+    ? binaryPath.toLowerCase().startsWith(configPrefix.toLowerCase())
+    : binaryPath.startsWith(configPrefix);
 
-  console.log(C.yellow("\nUninstalling neorwc...\n"));
+  console.log(C.yellow(">>> Uninstalling neorwc...\n"));
+
+  const ok = (msg: string) => console.log(`  ${C.green("\u2714")} ${msg}`);
+  const info = (msg: string) => console.log(C.gray(`  \u2139 ${msg}`));
 
   function deleteDirContentsExcept(dir: string, exceptPath: string): void {
     if (!existsSync(dir)) return;
@@ -409,19 +423,19 @@ function handleSelfUninstall(): void {
 
   if (isWindows) {
     if (isBinaryInsideConfig) {
+      ok("Removing config files...");
       deleteDirContentsExcept(configDirResolved, binaryPath);
 
       const batContent = `@echo off
 timeout /t 1 /nobreak >nul
-rmdir /s /q "${configDirResolved}"
+rmdir /s /q "${configDirResolved}" 2>nul
 echo neorwc has been uninstalled.
 (goto) 2>nul & del "%~f0"`;
 
       const batPath = join(tmpdir(), `neorwc-uninstall-${Date.now()}.bat`);
       writeFileSync(batPath, batContent);
 
-      console.log(C.gray("  Launching cleanup..."));
-
+      ok("Uninstall script created. neorwc will be fully removed shortly.");
       spawn("cmd", ["/C", "start", "/B", batPath], {
         detached: true,
         stdio: "ignore",
@@ -429,6 +443,7 @@ echo neorwc has been uninstalled.
       }).unref();
     } else {
       if (existsSync(configDirResolved)) {
+        ok("Removing config directory...");
         try {
           rmSync(configDirResolved, { recursive: true, force: true });
         } catch {
@@ -438,42 +453,58 @@ echo neorwc has been uninstalled.
             // ignore
           }
         }
+      } else {
+        info("No config directory found.");
       }
 
       const batContent = `@echo off
 timeout /t 1 /nobreak >nul
-del /f /q "${binaryPath}"
+del /f /q "${binaryPath}" 2>nul
 echo neorwc has been uninstalled.
 (goto) 2>nul & del "%~f0"`;
 
       const batPath = join(tmpdir(), `neorwc-uninstall-${Date.now()}.bat`);
       writeFileSync(batPath, batContent);
 
-      console.log(C.gray("  Launching cleanup..."));
+      ok("Uninstall script created. Binary will be deleted shortly.");
+      spawn("cmd", ["/C", "start", "/B", batPath], {
+        detached: true,
+        stdio: "ignore",
+        windowsHide: true,
+      }).unref();
+    }
+  } else {
+    if (existsSync(configDirResolved)) {
+      ok("Removing config directory...");
+      rmSync(configDirResolved, { recursive: true, force: true });
+    } else {
+      info("No config directory found.");
+    }
 
-       spawn("cmd", ["/C", "start", "/B", batPath], {
-         detached: true,
-         stdio: "ignore",
-         windowsHide: true,
-       }).unref();
-     }
-   } else {
-     // Unix: can delete running binary
-     if (existsSync(configDirResolved)) {
-       rmSync(configDirResolved, { recursive: true, force: true });
-     }
-     try {
-       unlinkSync(binaryPath);
-     } catch (e) {
-       console.log(C.yellow(`  Note: Could not remove binary at ${binaryPath}`));
-       console.log(C.gray(`  ${(e as Error).message}`));
-     }
-   }
+    ok("Removing binary...");
+    try {
+      unlinkSync(binaryPath);
+    } catch (e) {
+      console.log(C.yellow(`  Note: Could not remove binary at ${binaryPath}`));
+      console.log(C.gray(`  ${(e as Error).message}`));
+    }
+  }
 
-  console.log(C.green("\u2714 Uninstall completed."));
-  console.log(C.gray(`\n  Please remove the neorwc PATH entry from your shell rc file`));
-  console.log(C.gray(`  (e.g., ~/.bashrc, ~/.zshrc, ~/.bash_profile, or Windows PATH)`));
-  console.log(C.gray(`  The path was: ~/.config/neostore/neorwc/bin/\n`));
+  console.log();
+  console.log(C.green("\u2714 neorwc has been uninstalled."));
+  console.log();
+  console.log(C.gray("  To remove neorwc from your PATH, delete the line containing 'neostore/neorwc/bin'"));
+  console.log(C.gray("  from your shell rc file (e.g., ~/.bashrc, ~/.zshrc, ~/.bash_profile, or Windows PATH)."));
+  console.log();
+  console.log(C.gray("  To reinstall, run:"));
+  if (isWindows) {
+    console.log(C.cyan("    powershell -c \"irm https://raw.githubusercontent.com/rkriad585/neorwc-cli/main/installer.ps1 | iex\""));
+  } else {
+    console.log(C.cyan("    curl -fsSL https://raw.githubusercontent.com/rkriad585/neorwc-cli/main/installer.sh | sh"));
+  }
+  console.log();
+  console.log(C.yellow("  Restart your terminal for PATH changes to take effect."));
+  console.log();
 }
 
 async function handleUpdate(): Promise<void> {
@@ -482,13 +513,45 @@ async function handleUpdate(): Promise<void> {
   const binaryName = "neorwc";
   const isWindows = platform() === "win32";
 
-  // Detect current platform and arch for download
   const osName = isWindows ? "windows" : platform() === "darwin" ? "darwin" : "linux";
   const archRaw = process.arch;
   const archName = archRaw === "x64" ? "amd64" : archRaw === "arm64" ? "arm64" : "amd64";
   const downloadBinary = `${binaryName}-${osName}-${archName}${isWindows ? ".exe" : ""}`;
 
-  // Get current binary path
+  logLogo();
+  console.log(`  Current version: v${VERSION}`);
+  console.log(`  Checking for updates...`);
+  console.log();
+
+  let latestVersion: string;
+  try {
+    const resp = await fetch(`https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/.version`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    latestVersion = (await resp.text()).trim().replace(/^v/, "");
+  } catch {
+    console.log(C.red(`  Failed to fetch latest version from GitHub.`));
+    console.log(C.gray(`  Check your internet connection.`));
+    return;
+  }
+
+  console.log(`  Current version: v${VERSION}`);
+  console.log(`  Latest version : v${latestVersion}`);
+  console.log();
+
+  if (VERSION === latestVersion || VERSION.localeCompare(latestVersion, undefined, { numeric: true }) >= 0) {
+    console.log(C.green(`  \u2714 neorwc is already up to date.`));
+    return;
+  }
+
+  console.log(C.yellow(`  Update available: v${latestVersion}`));
+  console.log();
+
+  const proceed = await promptConfirm("  Download and install update?", true);
+  if (!proceed) {
+    console.log(C.yellow(`  Update cancelled.`));
+    return;
+  }
+
   let currentPath: string;
   try {
     if (typeof Bun !== "undefined") {
@@ -501,90 +564,88 @@ async function handleUpdate(): Promise<void> {
   }
   currentPath = resolve(currentPath);
 
-  console.log(C.cyan(`\n  Checking for updates...\n`));
-
-  // Fetch latest version
-  let latestVersion: string;
-  try {
-    const resp = await fetch(`https://raw.githubusercontent.com/${repoOwner}/${repoName}/main/.version`);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    latestVersion = (await resp.text()).trim().replace(/^v/, "");
-  } catch {
-    console.log(C.red(`  Failed to fetch latest version from GitHub.`));
-    console.log(C.gray(`  Check your internet connection.`));
-    return;
-  }
-
-  const currentVersion = VERSION;
-
-  console.log(`  Current: v${currentVersion}`);
-  console.log(`  Latest:  v${latestVersion}`);
-
-  if (currentVersion === latestVersion) {
-    console.log(C.green(`\n  \u2714 neorwc is already up to date.`));
-    return;
-  }
-
-  // Compare versions (simple string compare works for semver)
-  if (currentVersion.localeCompare(latestVersion, undefined, { numeric: true }) >= 0) {
-    console.log(C.green(`\n  \u2714 neorwc is already up to date.`));
-    return;
-  }
-
-  console.log(C.yellow(`\n  New version available: v${latestVersion}`));
-
-  const proceed = await promptConfirm("  Download and install update?", true);
-  if (!proceed) return;
-
-  // Download new binary to temp
   const downloadUrl = `https://github.com/${repoOwner}/${repoName}/releases/download/v${latestVersion}/${downloadBinary}`;
   const tmpPath = join(tmpdir(), `${binaryName}-update-${Date.now()}${isWindows ? ".exe" : ""}`);
 
-  const spin = createSpinner("Downloading update...").start();
+  console.log(`  Downloading: ${downloadBinary}`);
+  console.log();
+
   try {
     const resp = await fetch(downloadUrl);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    const buffer = await resp.arrayBuffer();
-    writeFileSync(tmpPath, new Uint8Array(buffer));
+    if (!resp.ok) {
+      console.log(C.red(`  Download failed: HTTP ${resp.status} ${resp.statusText}`));
+      return;
+    }
+
+    const totalBytes = Number(resp.headers.get("content-length") || 0);
+    const reader = resp.body!.getReader();
+    const chunks: Uint8Array[] = [];
+    let downloaded = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      downloaded += value.length;
+      const mb = (downloaded / 1024 / 1024).toFixed(2);
+      if (totalBytes > 0) {
+        const totalMb = (totalBytes / 1024 / 1024).toFixed(2);
+        const pct = ((downloaded / totalBytes) * 100).toFixed(1);
+        process.stdout.write(`\r  Downloaded: ${mb} MB / ${totalMb} MB (${pct}%)`);
+      } else {
+        process.stdout.write(`\r  Downloaded: ${mb} MB`);
+      }
+    }
+    process.stdout.write("\n");
+
+    const buffer = new Uint8Array(downloaded);
+    let offset = 0;
+    for (const chunk of chunks) {
+      buffer.set(chunk, offset);
+      offset += chunk.length;
+    }
+    writeFileSync(tmpPath, buffer);
+
     if (!isWindows) {
       execSync(`chmod +x "${tmpPath}"`);
     }
   } catch (e) {
-    spin.fail(`Download failed: ${(e as Error).message}`);
+    console.log(C.red(`  Download failed: ${(e as Error).message}`));
     try { unlinkSync(tmpPath); } catch {}
     return;
   }
-  spin.succeed("Downloaded update.");
 
-  // Replace current binary
-  const spin2 = createSpinner("Installing update...").start();
+  console.log();
+  process.stdout.write(`  Installing update...`);
+
   try {
     if (isWindows) {
-      // Windows: can't replace running exe, use rename trick
-      const batContent = `@echo off
-timeout /t 1 /nobreak >nul
-move /y "${tmpPath}" "${currentPath}" >nul 2>&1
-echo neorwc updated to v${latestVersion}.
-(goto) 2>nul & del "%~f0"`;
-      const batPath = join(tmpdir(), `neorwc-update-${Date.now()}.bat`);
-      writeFileSync(batPath, batContent);
-      spawn("cmd", ["/C", "start", "/B", batPath], {
-        detached: true,
-        stdio: "ignore",
-        windowsHide: true,
-      }).unref();
-      spin2.succeed(`Installed v${latestVersion}. Restart your terminal.`);
+      const oldPath = currentPath + ".old";
+      try { unlinkSync(oldPath); } catch {}
+      await rename(currentPath, oldPath);
+      try {
+        await rename(tmpPath, currentPath);
+      } catch (e) {
+        try { await rename(oldPath, currentPath); } catch {}
+        console.log(C.red(`\r  Install failed: ${(e as Error).message}`));
+        console.log(C.gray(`  Rollback preserved at: ${oldPath}`));
+        console.log(C.gray(`  Temp binary at: ${tmpPath}`));
+        return;
+      }
+      console.log(C.green(`\r  \u2714 Success! neorwc has been updated to v${latestVersion}.`));
+      console.log(C.gray(`  Old executable saved as: ${binaryName}.exe.old`));
+      console.log(C.gray(`  You may delete it after closing this terminal.`));
     } else {
-      // Unix: overwrite running binary (inode-based, works fine)
-      writeFileSync(currentPath, readFileSync(tmpPath));
+      await rename(tmpPath, currentPath);
       execSync(`chmod +x "${currentPath}"`);
-      try { unlinkSync(tmpPath); } catch {}
-      spin2.succeed(`Updated to v${latestVersion}!`);
+      console.log(C.green(`\r  \u2714 Success! neorwc has been updated to v${latestVersion}.`));
     }
   } catch (e) {
-    spin2.fail(`Install failed: ${(e as Error).message}`);
-    console.log(C.gray(`  Binary saved at: ${tmpPath}`));
-    console.log(C.gray(`  Manually copy it to: ${currentPath}`));
+    console.log(C.red(`\r  Install failed: ${(e as Error).message}`));
+    if (existsSync(tmpPath)) {
+      console.log(C.gray(`  Binary saved at: ${tmpPath}`));
+      console.log(C.gray(`  Manually copy it to: ${currentPath}`));
+    }
   }
 }
 
