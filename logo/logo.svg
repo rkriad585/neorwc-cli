@@ -1,51 +1,164 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="gCyan" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#00D8FF"/>
-      <stop offset="100%" stop-color="#00A3CC"/>
+    <!-- Background -->
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#131A28"/>
+      <stop offset="100%" stop-color="#05070D"/>
+    </radialGradient>
+
+    <!-- Neon Gradients -->
+    <linearGradient id="neonBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="100%" stop-color="#008CFF"/>
     </linearGradient>
-    <linearGradient id="gPink" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%" stop-color="#FF0055"/>
-      <stop offset="100%" stop-color="#CC0044"/>
+
+    <linearGradient id="neonPink" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FF006E"/>
+      <stop offset="100%" stop-color="#FF4DA6"/>
     </linearGradient>
-    <linearGradient id="gNeo" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#00D8FF"/>
-      <stop offset="40%" stop-color="#00FF99"/>
-      <stop offset="100%" stop-color="#FF0055"/>
+
+    <linearGradient id="neonMix" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#00E5FF"/>
+      <stop offset="50%" stop-color="#00FFB3"/>
+      <stop offset="100%" stop-color="#FF006E"/>
     </linearGradient>
-    <linearGradient id="gRing" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1E2A3A"/>
-      <stop offset="100%" stop-color="#0D1117"/>
-    </linearGradient>
+
+    <!-- Glow Effects -->
+    <filter id="glowBlue" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="glowPink" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <filter id="glowMix" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
-  <title>Neorwc</title>
-  <desc>Neo Read Write Create — AI-powered documentation suite</desc>
+  <title>Neorwc Neon Logo</title>
 
-  <!-- Outer ring -->
-  <circle cx="256" cy="256" r="248" fill="#0D1117" stroke="url(#gRing)" stroke-width="3"/>
+  <!-- Background -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGlow)"/>
 
-  <!-- Inner ring -->
-  <circle cx="256" cy="256" r="236" fill="none" stroke="#1E2A3A" stroke-width="1" opacity="0.6"/>
+  <!-- Outer Ring -->
+  <circle
+    cx="256"
+    cy="256"
+    r="210"
+    fill="none"
+    stroke="#101722"
+    stroke-width="22"
+  />
 
-  <!-- Left vertical bar — Read (Cyan) -->
-  <rect x="120" y="96" width="48" height="280" rx="24" fill="url(#gCyan)"/>
+  <circle
+    cx="256"
+    cy="256"
+    r="210"
+    fill="none"
+    stroke="url(#neonMix)"
+    stroke-width="3"
+    opacity="0.9"
+    filter="url(#glowMix)"
+  />
 
-  <!-- Right vertical bar — Write (Pink) -->
-  <rect x="344" y="136" width="48" height="280" rx="24" fill="url(#gPink)"/>
+  <!-- Main Icon Group -->
+  <g>
 
-  <!-- Diagonal cross bar — Create (Gradient) -->
-  <path d="M168 376 L344 168 V136 L168 344 Z" fill="url(#gNeo)" opacity="0.85"/>
+    <!-- Left Bar -->
+    <rect
+      x="150"
+      y="122"
+      width="42"
+      height="240"
+      rx="21"
+      fill="url(#neonBlue)"
+      filter="url(#glowBlue)"
+    />
 
-  <!-- Neo accent — diamond -->
-  <polygon points="256,96 280,132 256,168 232,132" fill="#00FF99"/>
-  <rect x="250" y="124" width="12" height="16" rx="2" fill="#0D1117" opacity="0.3"/>
+    <!-- Right Bar -->
+    <rect
+      x="320"
+      y="122"
+      width="42"
+      height="240"
+      rx="21"
+      fill="url(#neonPink)"
+      filter="url(#glowPink)"
+    />
 
-  <!-- Brand name -->
-  <text x="256" y="446" text-anchor="middle" font-family="'Inter','SF Pro','Helvetica Neue',Arial,sans-serif" font-size="34" font-weight="700" fill="#00D8FF" letter-spacing="8">
-    neorwc
+    <!-- Center Diagonal -->
+    <path
+      d="M192 348 L320 190 V160 L192 318 Z"
+      fill="url(#neonMix)"
+      opacity="0.96"
+      filter="url(#glowMix)"
+    />
+
+  </g>
+
+  <!-- Top Diamond -->
+  <g filter="url(#glowMix)">
+    <polygon
+      points="256,92 282,128 256,164 230,128"
+      fill="#00FFB3"
+    />
+
+    <rect
+      x="250"
+      y="120"
+      width="12"
+      height="16"
+      rx="3"
+      fill="#05070D"
+      opacity="0.35"
+    />
+  </g>
+
+  <!-- Small Accent Dots -->
+  <circle cx="120" cy="170" r="3" fill="#00E5FF" opacity="0.8"/>
+  <circle cx="392" cy="170" r="3" fill="#FF006E" opacity="0.8"/>
+  <circle cx="392" cy="340" r="2.5" fill="#00FFB3" opacity="0.85"/>
+  <circle cx="120" cy="340" r="2.5" fill="#00E5FF" opacity="0.7"/>
+
+  <!-- Brand Name -->
+  <text
+    x="256"
+    y="436"
+    text-anchor="middle"
+    font-family="Inter, SF Pro Display, Arial, sans-serif"
+    font-size="34"
+    font-weight="800"
+    letter-spacing="8"
+    fill="#F5FBFF"
+  >
+    NEORWC
   </text>
-  <text x="256" y="472" text-anchor="middle" font-family="'Inter','SF Pro','Helvetica Neue',Arial,sans-serif" font-size="11" font-weight="500" fill="#586069" letter-spacing="4">
-    NEO · READ · WRITE · CREATE
+
+  <!-- Subtitle -->
+  <text
+    x="256"
+    y="466"
+    text-anchor="middle"
+    font-family="Inter, Arial, sans-serif"
+    font-size="10"
+    font-weight="600"
+    letter-spacing="4"
+    fill="#7B8797"
+  >
+    NEO • READ • WRITE • CREATE
   </text>
 </svg>
