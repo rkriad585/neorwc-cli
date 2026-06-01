@@ -6,7 +6,7 @@ import "./src/tips/index.ts";
 import { defineCommand, runMain } from "citty";
 import { Listr } from "listr2";
 import cliSpinners, { randomSpinner } from "cli-spinners";
-import { basename, join, resolve, dirname } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { existsSync, readFileSync, unlinkSync, rmSync, readdirSync, lstatSync, realpathSync, writeFileSync } from "node:fs";
 import { mkdir, writeFile, readFile, readdir } from "node:fs/promises";
 import * as readline from "node:readline/promises";
@@ -171,14 +171,16 @@ const main = defineCommand({
           task.output = `Indexed ${ctx.scanResult.fileCount} files.`;
         },
       },
-    ], { rendererOptions: { showTimer: true } });
+    ], { rendererOptions: { showTimer: true } as any });
 
     const { modelCaps, scanResult } = await phase1.run();
 
     // Resolve context: flag > merged config > model auto-detect > hard default
     let contextLimit = 65536;
-    if (args.ctx)            contextLimit = parseInt(args.ctx as string);
-    else if (mergedConfig.ctx) contextLimit = mergedConfig.ctx;
+    if (args.ctx) {
+      const parsed = parseInt(args.ctx as string);
+      if (!isNaN(parsed)) contextLimit = parsed;
+    } else if (mergedConfig.ctx) contextLimit = mergedConfig.ctx;
     else                     contextLimit = modelCaps.maxContext;
 
     console.log(`  ${C.green("\u2713")} Model loaded. Max Context: ${C.bold(String(contextLimit))} tokens.\n`);
@@ -257,7 +259,7 @@ const main = defineCommand({
           }
         },
       },
-    ], { rendererOptions: { showTimer: true } });
+    ], { rendererOptions: { showTimer: true } as any });
 
     try {
       const { summary } = await phase2.run();

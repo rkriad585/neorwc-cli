@@ -35,25 +35,27 @@ class OllamaProvider implements AiProvider {
   }
 
   async generate(payload: GeneratePayload): Promise<string> {
-    const response = await fetch(config.OLLAMA_API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: payload.model,
-        prompt: payload.prompt,
-        stream: false,
-        options: {
-          num_ctx: payload.options.num_ctx,
-          temperature: payload.options.temperature,
-          stop: ["<<<STOP>>>"],
-        },
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(config.OLLAMA_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: payload.model,
+          prompt: payload.prompt,
+          stream: false,
+          options: {
+            num_ctx: payload.options.num_ctx,
+            temperature: payload.options.temperature,
+            stop: ["<<<STOP>>>"],
+          },
+        }),
+      });
+    } catch {
+      throw new Error("Ollama is not running. Run `ollama serve`.");
+    }
 
     if (!response.ok) {
-      if (response.status === 0 || response.type === "error") {
-        throw new Error("Ollama is not running. Run `ollama serve`.");
-      }
       throw new Error(`Ollama Error (${response.status}): ${await response.text()}`);
     }
 

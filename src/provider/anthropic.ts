@@ -42,7 +42,7 @@ class AnthropicProvider implements AiProvider {
 
     const body = {
       model: payload.model,
-      max_tokens: payload.options.num_ctx ?? 8192,
+      max_tokens: 8192,
       messages: [{ role: "user" as const, content: payload.prompt }],
       temperature: payload.options.temperature,
     };

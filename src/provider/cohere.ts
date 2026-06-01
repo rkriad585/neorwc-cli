@@ -43,7 +43,7 @@ class CohereProvider implements AiProvider {
     const body = {
       model: payload.model,
       message: payload.prompt,
-      max_tokens: payload.options.num_ctx ?? 4096,
+      max_tokens: Math.min(payload.options.num_ctx, 4096),
       temperature: payload.options.temperature,
     };
 

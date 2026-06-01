@@ -105,7 +105,7 @@ function getGitCommit(): string {
 
 // get project version — use injected __version.ts first, fallback to .version file
 function getVersion(): string {
-  if (VERSION_TAG !== "v0.0.0") return VERSION_TAG;
+  if ((VERSION_TAG as string) !== "v0.0.0") return VERSION_TAG;
   try {
     return readFileSync(join(__dir, "..", "..", ".version"), "utf-8").trim();
   } catch {
@@ -144,7 +144,7 @@ function resolveTip(category?: string): ResolvedTip {
 export function showTip(category?: string): void {
   const spin = ora({ text: "Loading tips...", color: "cyan" }).start();
 
-  const { category: cat, message, hint } = resolveTip(category);
+  const { message, hint } = resolveTip(category);
   const version = getVersion();
   const commit = getGitCommit();
 

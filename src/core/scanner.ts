@@ -22,6 +22,9 @@ function formatFile(filePath: string, content: string): string {
 }
 
 export async function scanProject(rootDir: string, ignorePatterns?: string[]): Promise<ScanResult> {
+  if (typeof Bun === "undefined") {
+    throw new Error("neorwc requires Bun runtime to scan files.");
+  }
   // use Bun's native glob for fast recursive file listing
   const glob = new Bun.Glob("**/*");
   const allFiles = await Array.fromAsync(glob.scan({ cwd: rootDir, dot: true }));
