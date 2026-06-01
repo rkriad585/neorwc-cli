@@ -1,37 +1,19 @@
 import { config } from "../core/config.ts";
 import { loadGlobalConfig } from "../core/config-manager.ts";
 import type { AiProvider, ModelCapabilities, GeneratePayload } from "./types.ts";
-import { getModelsByProvider } from "modelpedia";
+import { defaultContext, findModelContext, fetchWithTimeout } from "./shared.ts";
 
-const MODELPEDIA_PROVIDER = "mistral";
-
-function defaultContext(): number {
-  try {
-    const models = getModelsByProvider(MODELPEDIA_PROVIDER);
-    const withCtx = models.find((m) => m.context_window);
-    if (withCtx?.context_window) return withCtx.context_window;
-  } catch {}
-  return 32_000;
-}
-
-function findModelContext(modelName: string): number | undefined {
-  const models = getModelsByProvider(MODELPEDIA_PROVIDER);
-  const lowerInput = modelName.toLowerCase();
-  const exact = models.find((m) => m.id.toLowerCase() === lowerInput);
-  if (exact?.context_window) return exact.context_window;
-  const prefix = models.find((m) => m.id.toLowerCase().startsWith(lowerInput));
-  return prefix?.context_window ?? undefined;
-}
+const MAX_OUTPUT_TOKENS = 16_384;
 
 class MistralProvider implements AiProvider {
   readonly name = "mistral";
 
   async getCapabilities(modelName: string): Promise<ModelCapabilities> {
     try {
-      const ctx = findModelContext(modelName);
+      const ctx = findModelContext("mistral", modelName);
       if (ctx) return { maxContext: ctx, exists: true };
     } catch {}
-    return { maxContext: defaultContext(), exists: false };
+    return { maxContext: defaultContext("mistral", 32_000), exists: false };
   }
 
   async generate(payload: GeneratePayload): Promise<string> {
@@ -43,11 +25,11 @@ class MistralProvider implements AiProvider {
     const body = {
       model: payload.model,
       messages: [{ role: "user" as const, content: payload.prompt }],
-      max_tokens: payload.options.num_ctx ?? 8192,
+      max_tokens: Math.min(payload.options.num_ctx, MAX_OUTPUT_TOKENS),
       temperature: payload.options.temperature,
     };
 
-    const response = await fetch(config.MISTRAL_API_BASE, {
+    const response = await fetchWithTimeout(config.MISTRAL_API_BASE, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

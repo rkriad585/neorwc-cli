@@ -17,8 +17,6 @@
     "Use --no-verify to skip pre-commit hooks (use sparingly)",
     "git diff — see unstaged changes before adding them",
     "git log --graph --oneline — visualize branch history",
-    "git add -p — interactively stage hunks of changes",
-    "git rebase -i HEAD~3 — squash, reorder, or edit recent commits",
-    "git bisect — binary search through history to find a bug"
+    "git add -p — interactively stage hunks of changes"
   ]
 }

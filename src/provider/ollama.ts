@@ -1,12 +1,13 @@
 import { config } from "../core/config.ts";
 import type { AiProvider, ModelCapabilities, GeneratePayload } from "./types.ts";
+import { fetchWithTimeout } from "./shared.ts";
 
 class OllamaProvider implements AiProvider {
   readonly name = "ollama";
 
   async getCapabilities(modelName: string): Promise<ModelCapabilities> {
     try {
-      const response = await fetch(config.OLLAMA_SHOW_API, {
+      const response = await fetchWithTimeout(config.OLLAMA_SHOW_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: modelName }),
@@ -37,7 +38,7 @@ class OllamaProvider implements AiProvider {
   async generate(payload: GeneratePayload): Promise<string> {
     let response: Response;
     try {
-      response = await fetch(config.OLLAMA_API, {
+      response = await fetchWithTimeout(config.OLLAMA_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -47,7 +48,6 @@ class OllamaProvider implements AiProvider {
           options: {
             num_ctx: payload.options.num_ctx,
             temperature: payload.options.temperature,
-            stop: ["<<<STOP>>>"],
           },
         }),
       });

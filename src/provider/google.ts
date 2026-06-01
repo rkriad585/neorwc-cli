@@ -1,37 +1,17 @@
 import { config } from "../core/config.ts";
 import { loadGlobalConfig } from "../core/config-manager.ts";
 import type { AiProvider, ModelCapabilities, GeneratePayload } from "./types.ts";
-import { getModelsByProvider } from "modelpedia";
-
-const MODELPEDIA_PROVIDER = "google";
-
-function defaultContext(): number {
-  try {
-    const models = getModelsByProvider(MODELPEDIA_PROVIDER);
-    const withCtx = models.find((m) => m.context_window);
-    if (withCtx?.context_window) return withCtx.context_window;
-  } catch {}
-  return 1_048_576;
-}
-
-function findModelContext(modelName: string): number | undefined {
-  const models = getModelsByProvider(MODELPEDIA_PROVIDER);
-  const lowerInput = modelName.toLowerCase();
-  const exact = models.find((m) => m.id.toLowerCase() === lowerInput);
-  if (exact?.context_window) return exact.context_window;
-  const prefix = models.find((m) => m.id.toLowerCase().startsWith(lowerInput));
-  return prefix?.context_window ?? undefined;
-}
+import { defaultContext, findModelContext, fetchWithTimeout } from "./shared.ts";
 
 class GoogleProvider implements AiProvider {
   readonly name = "google";
 
   async getCapabilities(modelName: string): Promise<ModelCapabilities> {
     try {
-      const ctx = findModelContext(modelName);
+      const ctx = findModelContext("google", modelName);
       if (ctx) return { maxContext: ctx, exists: true };
     } catch {}
-    return { maxContext: defaultContext(), exists: false };
+    return { maxContext: defaultContext("google", 1_048_576), exists: false };
   }
 
   async generate(payload: GeneratePayload): Promise<string> {
@@ -49,7 +29,7 @@ class GoogleProvider implements AiProvider {
       },
     };
 
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),

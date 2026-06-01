@@ -33,7 +33,7 @@ export const config = {
   ANTHROPIC_API_BASE: "https://api.anthropic.com/v1/messages" as const,
   DEEPSEEK_API_BASE: "https://api.deepseek.com/v1/chat/completions" as const,
   MISTRAL_API_BASE: "https://api.mistral.ai/v1/chat/completions" as const,
-  COHERE_API_BASE: "https://api.cohere.ai/v1/chat" as const,
+  COHERE_API_BASE: "https://api.cohere.com/v2/chat" as const,
 
   KEYS: {
     GOOGLE: process.env.NEORWC_GOOGLE_KEY ?? null,

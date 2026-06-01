@@ -3,7 +3,7 @@ dist/
 bin/
 *.exe
 *.wasm
-bun.lock
+# bun.lock - should be committed for reproducible builds
 .neorwc
 .env
 .env.local

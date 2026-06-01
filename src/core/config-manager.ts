@@ -46,6 +46,15 @@ export async function saveGlobalConfig(data: Partial<GlobalConfig>): Promise<voi
     JSON.stringify({ ...current, ...data, lastUpdated: new Date().toISOString() }, null, 2),
     "utf-8",
   );
+  // Restrict file permissions on non-Windows (API keys stored inside)
+  try {
+    if (process.platform !== "win32") {
+      const { chmodSync } = await import("node:fs");
+      chmodSync(GLOBAL_CONFIG_PATH, 0o600);
+    }
+  } catch {
+    // best-effort
+  }
 }
 
 // Merged view: global config (primary) + project state fallback for provider/model/ctx

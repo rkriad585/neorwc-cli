@@ -138,7 +138,7 @@ const main = defineCommand({
     if (args.templates)  { await listRemoteTemplates(); return; }
     if (args.install)    { await installTemplate(args.install as string); return; }
     if (args.init)       { return await handleInit(); }
-    if (args.list)       { return await handleList(); }
+    if (args.list)       { try { return await handleList(); } catch (e) { console.log(C.red(`Error listing resources: ${(e as Error).message}`)); return; } }
 
     // --- Main flow ---
     const mergedConfig = await loadMergedConfig();
@@ -193,8 +193,15 @@ const main = defineCommand({
 
     drawUsageBar(scanResult.tokenEstimate, contextLimit);
 
+    let context = scanResult.context;
     if (scanResult.tokenEstimate > contextLimit) {
-      console.log(C.red(`  \u26A0 Warning: Input exceeds model limit (${contextLimit}). Truncation will occur.`));
+      const maxChars = Math.floor(contextLimit * 3.5);
+      if (context.length > maxChars) {
+        context = context.slice(0, maxChars) + `\n\n...[context truncated to ${contextLimit} tokens]...\n`;
+        console.log(C.yellow(`  \u26A0 Context truncated to fit model limit (${contextLimit} tokens).`));
+      } else {
+        console.log(C.red(`  \u26A0 Warning: Input may exceed model limit (${contextLimit} tokens).`));
+      }
     }
 
     // 2. Resolve instructions: skill + local context
@@ -247,7 +254,7 @@ const main = defineCommand({
             ctx.summary = await generateDocumentation({
               model: selectedModel,
               provider: selectedProvider,
-              context: scanResult.context,
+              context,
               instructions: combinedInstructions,
               projectName,
               ctxSize: contextLimit,
@@ -370,12 +377,11 @@ function handleSelfUninstall(): void {
    }
    binaryPath = resolve(binaryPath);
    const configDirResolved = resolve(configDir);
-   const normalizedConfigDir = configDirResolved.endsWith("\\") || configDirResolved.endsWith("/")
-     ? configDirResolved
-     : configDirResolved + (isWindows ? "\\" : "/");
+   const sep = isWindows ? "\\" : "/";
+   const configPrefix = configDirResolved.endsWith(sep) ? configDirResolved : configDirResolved + sep;
    const isBinaryInsideConfig = isWindows
-     ? binaryPath.toLowerCase().startsWith(normalizedConfigDir.toLowerCase())
-     : binaryPath.startsWith(normalizedConfigDir);
+     ? binaryPath.toLowerCase().startsWith(configPrefix.toLowerCase())
+     : binaryPath.startsWith(configPrefix);
 
   console.log(C.yellow("\nUninstalling neorwc...\n"));
 

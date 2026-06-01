@@ -1,37 +1,19 @@
 import { config } from "../core/config.ts";
 import { loadGlobalConfig } from "../core/config-manager.ts";
 import type { AiProvider, ModelCapabilities, GeneratePayload } from "./types.ts";
-import { getModelsByProvider } from "modelpedia";
+import { defaultContext, findModelContext, fetchWithTimeout } from "./shared.ts";
 
-const MODELPEDIA_PROVIDER = "anthropic";
-
-function defaultContext(): number {
-  try {
-    const models = getModelsByProvider(MODELPEDIA_PROVIDER);
-    const withCtx = models.find((m) => m.context_window);
-    if (withCtx?.context_window) return withCtx.context_window;
-  } catch {}
-  return 200_000;
-}
-
-function findModelContext(modelName: string): number | undefined {
-  const models = getModelsByProvider(MODELPEDIA_PROVIDER);
-  const lowerInput = modelName.toLowerCase();
-  const exact = models.find((m) => m.id.toLowerCase() === lowerInput);
-  if (exact?.context_window) return exact.context_window;
-  const prefix = models.find((m) => m.id.toLowerCase().startsWith(lowerInput));
-  return prefix?.context_window ?? undefined;
-}
+const MAX_OUTPUT_TOKENS = 65_536;
 
 class AnthropicProvider implements AiProvider {
   readonly name = "anthropic";
 
   async getCapabilities(modelName: string): Promise<ModelCapabilities> {
     try {
-      const ctx = findModelContext(modelName);
+      const ctx = findModelContext("anthropic", modelName);
       if (ctx) return { maxContext: ctx, exists: true };
     } catch {}
-    return { maxContext: defaultContext(), exists: false };
+    return { maxContext: defaultContext("anthropic", 200_000), exists: false };
   }
 
   async generate(payload: GeneratePayload): Promise<string> {
@@ -42,12 +24,12 @@ class AnthropicProvider implements AiProvider {
 
     const body = {
       model: payload.model,
-      max_tokens: 8192,
+      max_tokens: Math.min(payload.options.num_ctx, MAX_OUTPUT_TOKENS),
       messages: [{ role: "user" as const, content: payload.prompt }],
       temperature: payload.options.temperature,
     };
 
-    const response = await fetch(config.ANTHROPIC_API_BASE, {
+    const response = await fetchWithTimeout(config.ANTHROPIC_API_BASE, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

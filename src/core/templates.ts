@@ -10,11 +10,13 @@ interface GitHubItem {
   type: string;
 }
 
+const USER_AGENT = "neorwc-cli/1.0";
+
 // fetch directory listing from GitHub API
 async function fetchList(type: string): Promise<string[]> {
   try {
     const url = `${config.GITHUB_API_BASE}/${type}`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
     if (!response.ok) return [];
     const data = (await response.json()) as GitHubItem[];
     if (!Array.isArray(data)) return [];
@@ -34,7 +36,7 @@ async function downloadFile(
 ): Promise<boolean> {
   try {
     const url = `${config.GITHUB_RAW_BASE}/${type}/${name}.md`;
-    const response = await fetch(url);
+    const response = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
     if (!response.ok) return false;
     const content = await response.text();
     await mkdir(destDir, { recursive: true });
@@ -77,11 +79,18 @@ export async function installTemplate(name: string): Promise<void> {
       return;
     }
     console.log(`Downloading ${skills.length} templates...`);
+    let successCount = 0;
+    let failCount = 0;
     for (const s of skills) {
       if (await downloadFile("skills", s, SKILLS)) {
         console.log(`  Installed Skill: ${s}`);
+        successCount++;
+      } else {
+        console.log(`  Failed Skill: ${s}`);
+        failCount++;
       }
     }
+    console.log(`\n  Summary: ${successCount} installed, ${failCount} failed`);
     return;
   }
 

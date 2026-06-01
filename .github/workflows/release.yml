@@ -1,0 +1,354 @@
+# ================================================================
+#  AUTO BUILD & RELEASE WORKFLOW
+# ================================================================
+#  HOW TO USE:
+#    1. Make sure your repo root has a `.version` file, e.g:  v1.0.0
+#    2. Push a tag:  git tag vx.x.x && git push --tags
+#
+#  BINARY OUTPUT NAMES:
+#    neorwc-windows-amd64.exe   (Windows machine type 9  = AMD64)
+#    neorwc-windows-arm64.exe   (Windows machine type 12 = ARM64)
+#    neorwc-linux-amd64
+#    neorwc-linux-arm64
+#    neorwc-darwin-amd64
+#    neorwc-darwin-arm64
+# ================================================================
+
+name: Auto Build & Release
+
+env:
+  PROJECT_NAME:    neorwc
+  BUN_VERSION:     1.2.7
+  PUBLISHER_NAME:  rkriad585
+  PUBLISHER_EMAIL: rkriad585@gmail.com
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# ==============================================================
+# JOB 1 — Prepare: fetch version, commit, flags
+# ==============================================================
+jobs:
+  prepare:
+    name: "\U0001F4CB Prepare metadata"
+    runs-on: ubuntu-latest
+    outputs:
+      version:    ${{ steps.meta.outputs.version }}
+      tag:        ${{ steps.meta.outputs.tag }}
+      commit:     ${{ steps.meta.outputs.commit }}
+      prerelease: ${{ steps.meta.outputs.prerelease }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch version + resolve metadata
+        id: meta
+        run: |
+          OWNER="rkriad585"
+          PROJECT="${{ env.PROJECT_NAME }}"
+
+          REMOTE_URL="https://raw.githubusercontent.com/${OWNER}/${PROJECT}/main/.version"
+          echo "Fetching version from: ${REMOTE_URL}"
+          VERSION=$(curl -fsSL "${REMOTE_URL}" 2>/dev/null | tr -d '[:space:]') || true
+
+          if [ -z "$VERSION" ] && [ -f ".version" ]; then
+            VERSION=$(cat .version | tr -d '[:space:]')
+            echo "Using local .version: $VERSION"
+          fi
+
+          if [ -z "$VERSION" ]; then
+            TAG_TMP="${GITHUB_REF#refs/tags/}"
+            VERSION="${TAG_TMP#v}"
+            echo "Using git tag fallback: $VERSION"
+          fi
+
+          VERSION="${VERSION#v}"
+
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v${VERSION}")
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+
+          COMMIT=$(git rev-parse --short=8 HEAD)
+
+          if [[ "$TAG" == *"-"* ]]; then PRERELEASE="true"; else PRERELEASE="false"; fi
+
+          echo "version=$VERSION"       >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG"               >> "$GITHUB_OUTPUT"
+          echo "commit=$COMMIT"         >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+
+          echo "## Release Metadata"                        >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field          | Value |"                 >> "$GITHUB_STEP_SUMMARY"
+          echo "|----------------|-------|"                 >> "$GITHUB_STEP_SUMMARY"
+          echo "| Project        | \`${PROJECT}\` |"        >> "$GITHUB_STEP_SUMMARY"
+          echo "| Tag            | \`${TAG}\` |"            >> "$GITHUB_STEP_SUMMARY"
+          echo "| Version        | \`${VERSION}\` |"        >> "$GITHUB_STEP_SUMMARY"
+          echo "| Commit         | \`${COMMIT}\` |"         >> "$GITHUB_STEP_SUMMARY"
+          echo "| Pre-release    | ${PRERELEASE} |"         >> "$GITHUB_STEP_SUMMARY"
+          echo "| Publisher      | ${OWNER} |"              >> "$GITHUB_STEP_SUMMARY"
+
+# ==============================================================
+# JOB 2 — Build binaries for all 6 platform targets
+# ==============================================================
+  build:
+    name: "\U0001F528 Build ${{ matrix.label }}"
+    needs: prepare
+    runs-on: ${{ matrix.runner }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+
+          - label:    windows/amd64
+            runner:   windows-latest
+            bun_target: bun-windows-x64
+            goos:     windows
+            goarch:   amd64
+            ext:      .exe
+
+          - label:    windows/arm64
+            runner:   windows-latest
+            bun_target: bun-windows-arm64
+            goos:     windows
+            goarch:   arm64
+            ext:      .exe
+
+          - label:    linux/amd64
+            runner:   ubuntu-latest
+            bun_target: bun-linux-x64
+            goos:     linux
+            goarch:   amd64
+            ext:      ''
+
+          - label:    linux/arm64
+            runner:   ubuntu-latest
+            bun_target: bun-linux-arm64
+            goos:     linux
+            goarch:   arm64
+            ext:      ''
+
+          - label:    darwin/amd64
+            runner:   macos-13
+            bun_target: bun-darwin-x64
+            goos:     darwin
+            goarch:   amd64
+            ext:      ''
+
+          - label:    darwin/arm64
+            runner:   macos-14
+            bun_target: bun-darwin-arm64
+            goos:     darwin
+            goarch:   arm64
+            ext:      ''
+
+    steps:
+      - name: Checkout at ${{ needs.prepare.outputs.tag }}
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - name: Set up Bun ${{ env.BUN_VERSION }}
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build binary
+        shell: bash
+        env:
+          COMMIT_SHA: ${{ needs.prepare.outputs.commit }}
+          PUBLISHER_NAME: ${{ env.PUBLISHER_NAME }}
+          PUBLISHER_EMAIL: ${{ env.PUBLISHER_EMAIL }}
+        run: |
+          PROJECT="${{ env.PROJECT_NAME }}"
+          VERSION="${{ needs.prepare.outputs.version }}"
+
+          OUTFILE="${PROJECT}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}"
+
+          echo "-------------------------------------------"
+          echo " Binary : ${OUTFILE}"
+          echo " Target : ${{ matrix.bun_target }}"
+          echo " Version: ${VERSION}"
+          echo " Commit : ${{ needs.prepare.outputs.commit }}"
+          echo "-------------------------------------------"
+
+          bun run scripts/build.ts \
+            --target="${{ matrix.bun_target }}" \
+            --outfile="${OUTFILE}"
+
+          ls -lh "${OUTFILE}"
+          echo "OUTFILE=${OUTFILE}" >> "$GITHUB_ENV"
+
+      - name: Generate SHA-256 checksum
+        shell: bash
+        run: |
+          if command -v sha256sum &>/dev/null; then
+            sha256sum "${{ env.OUTFILE }}" > "${{ env.OUTFILE }}.sha256"
+          else
+            shasum -a 256 "${{ env.OUTFILE }}" > "${{ env.OUTFILE }}.sha256"
+          fi
+          cat "${{ env.OUTFILE }}.sha256"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            ${{ env.OUTFILE }}
+            ${{ env.OUTFILE }}.sha256
+          retention-days: 1
+          if-no-files-found: error
+
+# ==============================================================
+# JOB 3 — Generate changelog from git commit history
+# ==============================================================
+  changelog:
+    name: "\U0001F4DD Generate Changelog"
+    needs: prepare
+    runs-on: ubuntu-latest
+    outputs:
+      body: ${{ steps.gen.outputs.body }}
+
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Build release notes
+        id: gen
+        shell: bash
+        run: |
+          TAG="${{ needs.prepare.outputs.tag }}"
+          VERSION="${{ needs.prepare.outputs.version }}"
+          COMMIT="${{ needs.prepare.outputs.commit }}"
+          PROJECT="${{ env.PROJECT_NAME }}"
+
+          PREV=$(git tag --sort=-creatordate | grep -v "^${TAG}$" | head -n 1 || true)
+          RANGE="${PREV:+${PREV}..${TAG}}"
+          RANGE="${RANGE:-HEAD}"
+
+          FEAT=$(git log $RANGE --pretty=format:"- %s (%h)" | grep -iE "^\- feat(\(.+\))?:"  || true)
+          FIX=$( git log $RANGE --pretty=format:"- %s (%h)" | grep -iE "^\- fix(\(.+\))?:"   || true)
+          PERF=$(git log $RANGE --pretty=format:"- %s (%h)" | grep -iE "^\- perf(\(.+\))?:"  || true)
+          DOCS=$(git log $RANGE --pretty=format:"- %s (%h)" | grep -iE "^\- docs(\(.+\))?:"  || true)
+          REST=$(git log $RANGE --pretty=format:"- %s (%h)" | grep -ivE "^\- (feat|fix|perf|docs)(\(.+\))?:" || true)
+
+          {
+            echo 'body<<RELEASE_BODY_EOF'
+
+            echo "## \`${PROJECT}\` ${TAG}"
+            echo ""
+            echo "> Commit: \`${COMMIT}\`  |  Publisher: **${{ env.PUBLISHER_NAME }}** \`${{ env.PUBLISHER_EMAIL }}\`"
+            echo ""
+
+            [ -n "$FEAT" ] && printf "### \u2728 New Features\n%s\n\n" "$FEAT"
+            [ -n "$FIX"  ] && printf "### \U0001F41B Bug Fixes\n%s\n\n"  "$FIX"
+            [ -n "$PERF" ] && printf "### \u26A1 Performance\n%s\n\n"   "$PERF"
+            [ -n "$DOCS" ] && printf "### \U0001F4D6 Documentation\n%s\n\n" "$DOCS"
+            [ -n "$REST" ] && printf "### \U0001F527 Other Changes\n%s\n\n" "$REST"
+
+            echo "---"
+            echo ""
+            echo "## \U0001F4E5 Download Binaries"
+            echo ""
+            echo "| Platform | Architecture | File |"
+            echo "|----------|-------------|------|"
+            echo "| \U0001FAA5 Windows | AMD64 \`(machine type 9)\`  | \`${PROJECT}-windows-amd64.exe\` |"
+            echo "| \U0001FAA5 Windows | ARM64 \`(machine type 12)\` | \`${PROJECT}-windows-arm64.exe\` |"
+            echo "| \U0001F427 Linux   | AMD64                     | \`${PROJECT}-linux-amd64\`       |"
+            echo "| \U0001F427 Linux   | ARM64                     | \`${PROJECT}-linux-arm64\`       |"
+            echo "| \U0001F34E macOS   | AMD64 (Intel)             | \`${PROJECT}-darwin-amd64\`      |"
+            echo "| \U0001F34E macOS   | ARM64 (Apple Silicon)     | \`${PROJECT}-darwin-arm64\`      |"
+            echo ""
+            echo "## \u2705 Verify Checksum"
+            echo ""
+            echo "\`\`\`bash"
+            echo "# Linux / macOS"
+            echo "sha256sum --check ${PROJECT}-linux-amd64.sha256"
+            echo ""
+            echo "# Windows (PowerShell)"
+            echo "Get-FileHash .\\${PROJECT}-windows-amd64.exe -Algorithm SHA256"
+            echo "\`\`\`"
+            echo ""
+            echo "## \U0001F516 Build Info"
+            echo ""
+            echo "| Field          | Value |"
+            echo "|----------------|-------|"
+            echo "| Version        | \`${VERSION}\` |"
+            echo "| Commit         | \`${COMMIT}\`  |"
+            echo "| Publisher      | \`${{ env.PUBLISHER_NAME }}\` |"
+            echo "| Go Version     | Bun \`${{ env.BUN_VERSION }}\` |"
+            echo "| Source         | https://raw.githubusercontent.com/rkriad585/${PROJECT}/main/.version |"
+
+            echo 'RELEASE_BODY_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+# ==============================================================
+# JOB 4 — Publish the GitHub Release
+# ==============================================================
+  release:
+    name: "\U0001F680 Publish Release"
+    needs: [prepare, build, changelog]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: bin-*
+          path: dist/
+          merge-multiple: true
+
+      - name: List assets
+        run: |
+          echo "## Release Assets"   >> "$GITHUB_STEP_SUMMARY"
+          echo "| File | Size |"     >> "$GITHUB_STEP_SUMMARY"
+          echo "|------|------|"     >> "$GITHUB_STEP_SUMMARY"
+          find dist/ -type f | sort | while read f; do
+            SIZE=$(du -sh "$f" | cut -f1)
+            echo "| \`$(basename $f)\` | $SIZE |" >> "$GITHUB_STEP_SUMMARY"
+          done
+          ls -lhR dist/
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name:               ${{ needs.prepare.outputs.tag }}
+          name:                   "${{ env.PROJECT_NAME }} ${{ needs.prepare.outputs.tag }}"
+          body:                   ${{ needs.changelog.outputs.body }}
+          prerelease:             ${{ needs.prepare.outputs.prerelease }}
+          draft:                  false
+          generate_release_notes: false
+          files:                  dist/**
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+# ==============================================================
+# JOB 5 — Notify on failure
+# ==============================================================
+  notify-on-failure:
+    name: "\U0001F514 Failure Alert"
+    needs: [prepare, build, changelog, release]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write failure summary
+        run: |
+          echo "## Release FAILED — ${{ env.PROJECT_NAME }} ${{ needs.prepare.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Check the failed jobs above for details."                                       >> "$GITHUB_STEP_SUMMARY"
